@@ -1,0 +1,16 @@
+{
+  "name": "vidoplay",
+  "version": "0.0.1",
+  "description": "player that plays things",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://vidooloo@bitbucket.org/thevidoolooteam/player.git"
+  },
+  "author": "Vidooloo-team",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/thevidoolooteam/player#readme"
+}
