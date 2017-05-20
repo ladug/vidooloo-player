@@ -21,12 +21,12 @@ export default class EventEmitter {
         this._uid = getUid();
     }
 
-    get isDispatchActive() {
-        return !!this._activeEventsCount;
-    }
-
     get uid() {
         return this._uid;
+    }
+
+    get isDispatchActive() {
+        return this._activeEventsCount;
     }
 
     _markEventDispatchStart(eventUid) {
