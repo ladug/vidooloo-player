@@ -23,11 +23,14 @@ export default class VidoolooPlayer {
         assert(sourceTag, "No target DOMElement!");
         /* create container tag and place it above the target tag */
         this.container = document.createElement("div");
-        sourceTag.insertBefore(this.container, sourceTag);
+        sourceTag.parentNode.insertBefore(this.container, sourceTag);
         /* Read configurations from source DOMElement */
         this.configurations = getConfigurations(sourceTag);
+        this.init()
     }
-
+    init(){
+        this.createPlayerComponent();
+    }
     createPlayerComponent() {
         const {container, configurations:{width, height}}=this;
         new CanvasPlayer(container, width, height);
@@ -35,5 +38,6 @@ export default class VidoolooPlayer {
 }
 /*place the player in the position of the script tag*/
 const currentScript = document.currentScript;
-window.vidoolooPlayer = new VidoolooPlayer(null, currentScript); //pass script tag to the player to use for configurations
+window.vidoolooPlayer = new VidoolooPlayer(currentScript); //pass script tag to the player to use for configurations
 currentScript.parentNode.removeChild(currentScript); //remove the tag, no reason to keep it around
+
