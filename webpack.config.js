@@ -7,10 +7,8 @@ module.exports = {
         compress: true,
     },
     entry: {
-        //home: './home.js',
-        //events: './events.js',
-        //contact: './contact.js',
-        app: './player.js'
+        "stream": './workers/stream/worker.js',
+        "app": './player.js'
     },
     output: {
         path: path.resolve(__dirname, './dist'),
