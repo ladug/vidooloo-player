@@ -13,11 +13,34 @@ import {
 import EventListener from "./EventListener";
 export default class EventEmitter {
     _uid = null;
-    _isDispatching = [];
+    _activeEvents = {};
+    _activeEventsCount = 0;
     _destroyAfterDispatch = false;
 
     constructor() {
         this._uid = getUid();
+    }
+
+    get isDispatchActive() {
+        return !!this._activeEventsCount;
+    }
+
+    get uid() {
+        return this._uid;
+    }
+
+    _markEventDispatchStart(eventUid) {
+        this._activeEventsCount++;
+        this._activeEvents[eventUid] = true;
+    }
+
+    _markEventDispatchEnd(eventUid) {
+        this._activeEventsCount--;
+        delete this._activeEvents[eventUid];
+    }
+
+    isEventDispatching(eventUid) {
+        return this._activeEvents[eventUid];
     }
 
     addEventListener(event, handler) {
@@ -34,19 +57,6 @@ export default class EventEmitter {
         return null;
     }
 
-    dispatchEvent(event) {
-        if (isValidEvent(event)) {
-            if (this._isDispatching.indexOf(event.uid)) {
-                throw new Error("Event dispatch cause the same event to dispatch ( event-seption! )")
-            }
-            this._isDispatching.push(event.uid);
-            dispatchEvent(this.uid, event);
-            this._isDispatching.splice(this._isDispatching.indexOf(event.uid));
-            !this._isDispatching.length && this._destroyAfterDispatch && this.destroy();
-        }
-        return this;
-    }
-
     removeEventListener(mixed) {
         const listenerUid = (EventListener.isPrototypeOf(mixed) && mixed.uid)
             || (typeof mixed === "string" && mixed)
@@ -57,15 +67,25 @@ export default class EventEmitter {
         return this;
     }
 
+    dispatchEvent(event) {
+        if (isValidEvent(event)) {
+            if (this.isEventDispatching(event.uid)) {
+                throw new Error("Event dispatch cause the same event to dispatch ( event-seption ! )")
+            }
+            this._markEventDispatchStart(event.uid);
+            dispatchEvent(this.uid, event);
+            this._markEventDispatchEnd(event.uid);
+
+            !this.isDispatchActive && this._destroyAfterDispatch && this.destroy();
+        }
+        return this;
+    }
+
     destroy() {
-        if (this._isDispatching.length) {
+        if (this.isDispatchActive) {
             this._destroyAfterDispatch = true;
         } else {
             clearEventListeners(this.uid);
         }
-    }
-
-    get uid() {
-        return this._uid;
     }
 }
