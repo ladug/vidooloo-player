@@ -2,20 +2,8 @@
  * Created by vladi on 22-May-17.
  */
 import EventEmitter from "../../events/EventEmitter";
-import Event from "../../events/Event";
+import {StreamProgress, StreamError, StreamSuccess, StreamAbort} from "./StreamEvents";
 
-class StreamSuccess extends Event {
-
-}
-class StreamProgress extends Event {
-
-}
-class StreamError extends Event {
-
-}
-class StreamAbort extends Event {
-
-}
 export default class Stream extends EventEmitter {
     _http = null;
     _loading = false;
@@ -84,6 +72,14 @@ export default class Stream extends EventEmitter {
         if (!this._loading && !this._destroyed) {
             this._loading = true;
             this._http.open("GET", url, true);
+            this._http.send();
+        }
+    }
+
+    post(url) {
+        if (!this._loading && !this._destroyed) {
+            this._loading = true;
+            this._http.open("POST", url, true);
             this._http.send();
         }
     }
