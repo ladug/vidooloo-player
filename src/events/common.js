@@ -5,14 +5,13 @@ let listenerRegistry = {};
 let dispatchRegistry = {};
 let uid = 1;
 
-window.listenerRegistry = listenerRegistry;
-window.dispatchRegistry = dispatchRegistry;
 export class BasicEvent {
 }
 
 export const
     getUid = () => ++uid,
     isValidEvent = (event) => (BasicEvent.isPrototypeOf(event.constructor)),
+    isValidEventConstructor = (event) => (BasicEvent.isPrototypeOf(event)),
     listenerExists = (listenerUid) => !!listenerRegistry[listenerUid],
     dispatchExists = (emitterUid, eventUid) => !!(dispatchRegistry[emitterUid] && dispatchRegistry[emitterUid][eventUid]),
     emitterExists = (emitterUid) => !!dispatchRegistry[emitterUid],
@@ -65,7 +64,7 @@ export const
             dispatchRegistry[emitterUid][eventUid].forEach(
                 (listenerUid) => {
                     const listenerInfo = listenerRegistry[listenerUid];
-                    listenerInfo && listenerInfo._active && listenerInfo.handler(event)
+                    listenerInfo && listenerInfo._active && listenerInfo._handler(event)
                 }
             );
         }

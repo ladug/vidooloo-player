@@ -3,7 +3,7 @@
  */
 import Event from "../events/Event";
 
-export class CanvasInit extends Event{
+export class CanvasReady extends Event{
 
 }
 

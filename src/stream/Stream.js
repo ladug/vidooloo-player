@@ -41,14 +41,15 @@ export default class Stream extends EventEmitter {
         this.dispatchEvent(new StreamError({
             response: null,
             status: this._http.status,
-            type: "success"
+            type: type
         }));
     };
     _onProgress = (event) => {
+        console.log(event);
         this.dispatchEvent(new StreamProgress({
             response: null,
             status: this._http.status,
-            type: "success"
+            type: "progress"
         }));
     };
 

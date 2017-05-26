@@ -6,6 +6,7 @@ import {
     isValidEvent,
     listenerExists,
     addEventListener,
+    isValidEventConstructor,
     removeEventListener,
     clearEventListeners,
     dispatchEvent
@@ -44,7 +45,7 @@ export default class EventEmitter {
     }
 
     addEventListener(event, handler) {
-        if (isValidEvent(event) && typeof handler === 'function') {
+        if (isValidEventConstructor(event) && typeof handler === 'function') {
             return new EventListener(
                 addEventListener({
                     _active: true,
