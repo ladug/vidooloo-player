@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 22-May-17.
  */
-import EventEmitter from "../../events/EventEmitter";
+import EventEmitter from "../events/EventEmitter";
 import {StreamProgress, StreamError, StreamSuccess, StreamAbort} from "./StreamEvents";
 
 export default class Stream extends EventEmitter {

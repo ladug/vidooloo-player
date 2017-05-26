@@ -1,4 +1,4 @@
 /**
  * Created by vladi on 20-May-17.
  */
-console.log("success");
+import Stream from "../../stream/Stream";

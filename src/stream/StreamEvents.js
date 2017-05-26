@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 22-May-17.
  */
-import Event from "../../events/Event";
+import Event from "../events/Event";
 export class StreamSuccess extends Event {
     payload = null;
 
