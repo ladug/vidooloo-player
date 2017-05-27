@@ -12,20 +12,27 @@ export default class DataParser extends EventEmitter {
     svfHeader = null;
 
     addSvfChunk(chunk, data) {
-
-        this.svfChunks.push({
-            chunk,
-            data
-        });
-
+        this.svfChunks.push({chunk, data});
         if (!this.svfHeader) {
-            const svfHeader = new SvfHeader(this.svfChunks);
-            if (!svfHeader.isHeaderComplete()) {
-                this.dispatchEvent(new MissingHeaderEvent());
-            } else {
-                this.svfHeader = svfHeader;
-            }
+            this._getSvfHeader();
         }
+    }
+
+    _getSvfHeader() {
+        const svfHeader = new SvfHeader(this.svfChunks);
+        if (!svfHeader.isHeaderComplete()) {
+            return this.dispatchEvent(new MissingHeaderEvent());
+        }
+
+        const svfData = svfHeader.extractExtraBytes();
+        this.svfChunks = [{
+            chunk: svfData,
+            data: {
+                offset: svfHeader.size,
+                size: svfData.length
+            }
+        }];
+        this.svfHeader = svfHeader;
 
     }
 

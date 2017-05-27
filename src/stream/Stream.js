@@ -35,6 +35,7 @@ export default class Stream extends EventEmitter {
 
     _onLoad = () => {
         this._loading = false;
+        console.log("success in ",(new Date()).getTime() - this._start,"ms")
         this.dispatchEvent(new StreamSuccess({
             response: this._http.response,
             status: this._http.status,
@@ -42,7 +43,7 @@ export default class Stream extends EventEmitter {
             type: "success",
             chunkData : this._chunkData
         }));
-        console.log("success in ",(new Date()).getTime() - this._start,"ms")
+
     };
     _onError = ({type}) => {
         this._loading = false;
