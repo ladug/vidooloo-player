@@ -12,4 +12,14 @@ export class ChunkDownloadedEvent extends Event {
 }
 
 export class ManagerReadyEvent extends Event {
+    _payload = null;
+
+    constructor(payload) {
+        super();
+        this._payload = payload;
+    }
+
+    get payload() {
+        return this._payload;
+    }
 }
