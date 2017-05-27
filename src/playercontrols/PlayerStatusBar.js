@@ -10,9 +10,9 @@ export default class PlayerStatusBar {
     constructor() {
         const {container, playProgress, mainProgress, secondaryProgress} = this;
         container.style.cssText = "position:relative;height:20px;width:100%;background-color:#bbb";
-        playProgress.style.cssText = "position:relative;height:8px;width:0;background-color:#666";
-        mainProgress.style.cssText = "position:relative;height:8px;width:0;background-color:blue";
-        secondaryProgress.style.cssText = "position:relative;height:4px;width:0;background-color:yellow";
+        playProgress.style.cssText = "float:left;clear:both;position:relative;height:8px;width:0;background-color:#666";
+        mainProgress.style.cssText = "float:left;clear:both;position:relative;height:8px;width:0;background-color:blue";
+        secondaryProgress.style.cssText = "float:left;clear:both;position:relative;height:4px;width:0;background-color:yellow";
 
         container.appendChild(playProgress);
         container.appendChild(mainProgress);
