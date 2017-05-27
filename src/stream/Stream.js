@@ -10,6 +10,7 @@ export default class Stream extends EventEmitter {
     _destroyed = false;
     _configurations = {};
     _headers = {};
+    _startTime = null;
 
     constructor(configurations) {
         super();
@@ -34,14 +35,17 @@ export default class Stream extends EventEmitter {
         this.dispatchEvent(new StreamSuccess({
             response: this._http.response,
             status: this._http.status,
+            time: (new Date()).getTime() - this._start,
             type: "success"
         }));
+        console.log("success in ",(new Date()).getTime() - this._start,"ms")
     };
     _onError = ({type}) => {
         this._loading = false;
         this.dispatchEvent(new StreamError({
             response: null,
             status: this._http.status,
+            time: (new Date()).getTime() - this._start,
             type: type
         }));
     };
@@ -49,6 +53,7 @@ export default class Stream extends EventEmitter {
         console.log(event);
         this.dispatchEvent(new StreamProgress({
             response: null,
+            time: (new Date()).getTime() - this._start,
             status: this._http.status,
             type: "progress"
         }));
@@ -89,6 +94,7 @@ export default class Stream extends EventEmitter {
             this._loading = true;
             this._http.open("GET", url, true);
             this._applyHeaders();
+            this._start = (new Date()).getTime();
             this._http.send();
         }
     }
@@ -98,6 +104,7 @@ export default class Stream extends EventEmitter {
             this._loading = true;
             this._http.open("POST", url, true);
             this._applyHeaders();
+            this._start = (new Date()).getTime();
             this._http.send();
         }
     }
