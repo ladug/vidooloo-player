@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 27-May-17.
  */
-import {assert} from "../common";
+import {assert,readByteString} from "../common";
 
 export default class PvfReader {
     constructor() {
@@ -9,9 +9,7 @@ export default class PvfReader {
     }
 };
 
-const readByteString = (bytes, offset = 0, length = 4) => {
-    return (new Array(length)).fill(offset).map((offset, index) => String.fromCharCode(bytes[offset + index])).join('');
-};
+
 
 export class PvfHeader {
     _type = null;

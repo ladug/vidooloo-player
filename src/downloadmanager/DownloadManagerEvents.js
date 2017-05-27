@@ -8,7 +8,7 @@ export class ChunkDownloadedEvent extends Event {
 
     constructor(chunk) {
         super();
-        this._chunk = chunk || null;
+        this._chunk = chunk && chunk.payload || null;
     }
 
     get chunkData() {
