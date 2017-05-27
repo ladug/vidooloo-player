@@ -5,7 +5,7 @@ import EventEmitter from "../events/EventEmitter";
 import {ManagerReadyEvent, ChunkDownloadedEvent} from "./DownloadManagerEvents";
 import Stream from "../stream/Stream";
 import {StreamSuccess, StreamError, StreamProgress, StreamAbort} from "../stream/StreamEvents";
-import {PvfHeader} from "../pvfreader/PvfReader";
+import {PvfHeader} from "../readers/PvfReader";
 import {assert, kb} from "../common";
 
 export default class DownloadManager extends EventEmitter {

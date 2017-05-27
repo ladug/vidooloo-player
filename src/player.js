@@ -2,15 +2,15 @@
  * Created by vladi on 21-Feb-17.
  */
 import CanvasPlayer from "./canvasplayer/CanvasPlayer";
-import DownloadManager from "./DownloadManager/DownloadManager";
+import DownloadManager from "./downloadmanager/DownloadManager";
 import PlayerControls from "./playercontrols/PlayerControls";
-import SvfStreamManager from "./DownloadManager/SvfStreamManager";
+import SvfStreamManager from "./downloadmanager/SvfStreamManager";
 import DigestControl from "./controlers/DigestControl";
 import {HeadersEvent} from "./controlers/DigestControlEvents";
 import {} from "./controlers/DigestControlEvents";
 
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
-import {ManagerReadyEvent} from "./DownloadManager/DownloadManagerEvents";
+import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
 import {assert, sec} from "./common";
 

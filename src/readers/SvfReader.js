@@ -3,3 +3,8 @@
  */
 import {assert} from "../common";
 
+export default class SvfReader {
+    constructor() {
+
+    }
+};

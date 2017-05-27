@@ -3,7 +3,7 @@
  */
 import EventEmitter from "../events/EventEmitter";
 import DataParser from "../dataparser/DataParser";
-import {ChunkDownloadedEvent} from "../DownloadManager/DownloadManagerEvents";
+import {ChunkDownloadedEvent} from "../downloadmanager/DownloadManagerEvents";
 import {HeadersEvent} from "./DigestControlEvents";
 import {assert} from "../common";
 
