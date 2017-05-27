@@ -2,12 +2,14 @@
  * Created by vladi on 26-May-17.
  */
 import EventEmitter from "../events/EventEmitter";
+import PlayerStatusBar from "./PlayerStatusBar";
 import {PlayEvent, PauseEvent, StopEvent} from "./PlayerControlEvents";
 
 
 export default class PlayerControls extends EventEmitter {
     configurations = {};
     container = document.createElement("div");
+    statusBar = new PlayerStatusBar();
 
     constructor(configurations) {
         super();
@@ -31,7 +33,9 @@ export default class PlayerControls extends EventEmitter {
         this.dispatchEvent(new StopEvent())
     };
     _createControls = () => {
-        const {container, _onPlayClick, _onPauseClick, _onStopClick} = this;
+        const {container, statusBar, _onPlayClick, _onPauseClick, _onStopClick} = this;
+
+        statusBar.attachTo(container);
 
         let playButton = document.createElement("input");
         playButton.value = "Play";
@@ -50,7 +54,20 @@ export default class PlayerControls extends EventEmitter {
         stopButton.type = "button";
         stopButton.addEventListener("click", _onStopClick);
         container.appendChild(stopButton);
+
     };
+
+    setPlayProgress(pre) {
+        this.statusBar.setPlayProgress(pre)
+    }
+
+    setPvfProgress(pre) {
+        this.statusBar.setMainPreloaded(pre)
+    }
+
+    setSvfProgress(pre) {
+        this.statusBar.setSecondaryPreloaded(pre)
+    }
 
     attachTo(container) {
         container.appendChild(this.container);
