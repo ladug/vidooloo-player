@@ -27,7 +27,7 @@ export default class SvfStreamManager extends EventEmitter {
             ...configurations
         }
     }
-    getChunk(){
+    readChunk(){
 
     }
 }

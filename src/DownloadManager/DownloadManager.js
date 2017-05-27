@@ -4,12 +4,13 @@
 import EventEmitter from "../events/EventEmitter";
 import {ManagerReadyEvent, ChunkDownloadedEvent} from "./DownloadManagerEvents";
 import Stream from "../stream/Stream";
-import {StreamSuccess, StreamError,StreamProgress,StreamAbort} from "../stream/StreamEvents";
+import {StreamSuccess, StreamError, StreamProgress, StreamAbort} from "../stream/StreamEvents";
 import {PvfHeader} from "../pvfreader/PvfReader";
 import {assert, kb} from "../common";
 
 export default class DownloadManager extends EventEmitter {
     streamThreads = [];
+    queue = [];
     configurations = {
         src: null, //TODO: default demo url
         threads: 1,
@@ -40,10 +41,10 @@ export default class DownloadManager extends EventEmitter {
         } else {
             this.streamThreads = (new Array(threads)).fill().map((a, index) => {
                 const stream = new Stream(streamConfigurations);
-                stream.addEventListener(StreamSuccess, this._chunkSuccess.bind(this, index));
-                stream.addEventListener(StreamError, this._chunkError.bind(this, index));
-                stream.addEventListener(StreamAbort, this._chunkAborted.bind(this, index));
-                stream.addEventListener(StreamProgress, this._chunkProgress.bind(this, index));
+                stream.addEventListener(StreamSuccess, this._chunkSuccess);
+                stream.addEventListener(StreamError, this._chunkError);
+                stream.addEventListener(StreamAbort, this._chunkAborted);
+                stream.addEventListener(StreamProgress, this._chunkProgress);
                 return stream;
             });
         }
@@ -84,27 +85,57 @@ export default class DownloadManager extends EventEmitter {
         headerStream.get(src);
     };
 
-    _chunkProgress(streamIndex,event) {
-
-    }
-    _chunkAborted(streamIndex,event) {
+    _chunkProgress(streamIndex, event) {
 
     }
 
-    _chunkError(streamIndex,event) {
+    _chunkAborted(event) {
 
+        this._checkChunkQueue();
     }
 
-    _chunkSuccess(streamIndex,event) {
+    _chunkError(event) {
 
+        this._checkChunkQueue();
+    }
+
+    _chunkSuccess(event) {
+
+        this.dispatchEvent(new ChunkDownloadedEvent(event))
+        this._checkChunkQueue();
     };
 
-    getChunk() {
-        const {streamThreads} = this,
-            {readOffset, readSize, src} = this.configurations;
-        streamThreads.forEach(stream => {
-
-        })
+    readChunks(num) {
+        const {readOffset, readSize, src} = this.configurations;
+        this.queue.push({
+            src: src,
+            size: readSize,
+            readStart: readOffset,
+            readEnd: readOffset + readSize
+        });
+        this._checkChunkQueue();
     }
 
+    _checkChunkQueue() {
+        if (!this.isQueueEmpty) {
+            const {streamThreads} = this;
+            streamThreads.forEach(stream => {
+                if (!stream.isLoading && !this.isQueueEmpty) {
+                    const {readStart, readEnd, size, src} = this.queue.shift();
+                    stream.chunkData = {
+                        offset: readStart,
+                        size: size
+                    };
+                    stream.setHeaders({
+                        "range": ["bytes=", readStart, "-" + (readEnd - 1)].join('')
+                    });
+                    stream.get(src);
+                }
+            });
+        }
+    }
+
+    get isQueueEmpty() {
+        return !this.queue.length;
+    }
 }

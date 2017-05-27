@@ -11,7 +11,7 @@ export default class Stream extends EventEmitter {
     _configurations = {};
     _headers = {};
     _startTime = null;
-
+    _chunkData = null;
     constructor(configurations) {
         super();
         this._http = new XMLHttpRequest();
@@ -22,6 +22,9 @@ export default class Stream extends EventEmitter {
         this._connectXHttp();
     }
 
+    set chunkData(chunkData){
+        this._chunkData={...chunkData};
+    }
     _connectXHttp() {
         this._http = Object.assign(this._http, this._configurations);
         this._http.onload = this._onLoad;
@@ -36,7 +39,8 @@ export default class Stream extends EventEmitter {
             response: this._http.response,
             status: this._http.status,
             time: (new Date()).getTime() - this._start,
-            type: "success"
+            type: "success",
+            chunkData : this._chunkData
         }));
         console.log("success in ",(new Date()).getTime() - this._start,"ms")
     };
@@ -46,7 +50,8 @@ export default class Stream extends EventEmitter {
             response: null,
             status: this._http.status,
             time: (new Date()).getTime() - this._start,
-            type: type
+            type: type,
+            chunkData : this._chunkData
         }));
     };
     _onProgress = (event) => {
@@ -55,7 +60,8 @@ export default class Stream extends EventEmitter {
             response: null,
             time: (new Date()).getTime() - this._start,
             status: this._http.status,
-            type: "progress"
+            type: "progress",
+            chunkData : this._chunkData
         }));
     };
 
