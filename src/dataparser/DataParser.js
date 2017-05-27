@@ -10,6 +10,7 @@ export default class DataParser extends EventEmitter {
     pvfChunks = [];
     svfChunks = [];
     svfHeader = null;
+    samples = [];
 
     addSvfChunk(chunk, data) {
         this.svfChunks.push({chunk, data});

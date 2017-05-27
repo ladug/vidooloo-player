@@ -14,8 +14,8 @@ import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
 import {assert, sec} from "./common";
 
-//const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/1494876554244.svf.digest";
-const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/trolls-2016-720p.x264.baseline.mp4.svf.digest";
+const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/1494876554244.svf.digest";
+
 
 const getConfigurations = hostingTag => ({
     width: hostingTag.getAttribute('width') * 1 || 300,
