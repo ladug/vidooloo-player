@@ -5,11 +5,14 @@ import CanvasPlayer from "./canvasplayer/CanvasPlayer";
 import DownloadManager from "./DownloadManager/DownloadManager";
 import PlayerControls from "./playercontrols/PlayerControls";
 import SvfStreamManager from "./DownloadManager/SvfStreamManager";
+import DigestControl from "./controlers/DigestControl";
+import {HeadersEvent} from "./controlers/DigestControlEvents";
+import {} from "./controlers/DigestControlEvents";
 
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./DownloadManager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
-import {assert} from "./common";
+import {assert, sec} from "./common";
 
 const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/1494876554244.svf.digest";
 
@@ -24,6 +27,7 @@ export default class VidoolooPlayer {
     container = document.createElement("div");
     canvasPlayer = null;
     svfStream = null;
+    digester = null;
     readyState = {
         canvasPlayer: false,
         downloadManager: false
@@ -66,6 +70,9 @@ export default class VidoolooPlayer {
         this.readyState.canvasPlayer = true;
     };
 
+    _onDigestHeaders = (event) => {
+        console.log("_onDigestHeaders", event)
+    };
     onDownloadManagerReady = (event) => {
         console.log(event);
         this.readyState.downloadManager = true;
@@ -75,6 +82,15 @@ export default class VidoolooPlayer {
             pvfUid: event.payload.uid,
             src: DEBUG_SVF_SRC
         });
+        this.digester = new DigestControl(
+            this.downloadManager,
+            this.svfStream,
+            {
+                preloadTime: 5 * sec
+            }
+        );
+        this.digester.addEventListener(HeadersEvent, this._onDigestHeaders);
+        this.digester.start();
     };
 }
 
