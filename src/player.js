@@ -4,11 +4,14 @@
 import CanvasPlayer from "./canvasplayer/CanvasPlayer";
 import DownloadManager from "./DownloadManager/DownloadManager";
 import PlayerControls from "./playercontrols/PlayerControls";
-import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
+import SvfStreamManager from "./DownloadManager/SvfStreamManager";
 
+import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./DownloadManager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
 import {assert} from "./common";
+
+const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/1494876554244.svf.digest";
 
 const getConfigurations = hostingTag => ({
     width: hostingTag.getAttribute('width') * 1 || 300,
@@ -20,6 +23,11 @@ export default class VidoolooPlayer {
     configurations = {};
     container = document.createElement("div");
     canvasPlayer = null;
+    svfStream = null;
+    readyState = {
+        canvasPlayer: false,
+        downloadManager: false
+    };
 
     constructor(sourceTag) {
         assert(sourceTag, "No target DOMElement!");
@@ -34,7 +42,6 @@ export default class VidoolooPlayer {
         this.createPlayerComponent();
         this.createDownloadManager();
     }
-
 
     createPlayerComponent() {
         const {container, configurations: {width, height}} = this;
@@ -54,13 +61,20 @@ export default class VidoolooPlayer {
     }
 
     onCanvasReady = () => {
-        console.log("onCanvasReady");
         this.controls = new PlayerControls();
         this.controls.attachTo(this.container);
+        this.readyState.canvasPlayer = true;
     };
+
     onDownloadManagerReady = (event) => {
         console.log(event);
-        console.log("onDownloadManagerReady");
+        this.readyState.downloadManager = true;
+        this.svfStream = new SvfStreamManager({
+            type: event.payload.type,
+            version: event.payload.version,
+            pvfUid: event.payload.uid,
+            src: DEBUG_SVF_SRC
+        });
     };
 }
 

@@ -21,7 +21,6 @@ export default class DownloadManager extends EventEmitter {
     };
     headerStream = new Stream();
 
-
     constructor(configurations, streamConfigurations) {
         super();
         this.configurations = {
@@ -35,7 +34,7 @@ export default class DownloadManager extends EventEmitter {
         const {threads, useWorkers, streamConfigurations} = this.configurations;
         assert(threads && threads > 0, "[DownloadManager] Illegal stream thread count!");
         if (useWorkers) {
-            //TODO
+            assert(false, "Not yet supported!")//TODO
         } else {
             this.streamThreads = (new Array(threads)).fill().map(() => new Stream(streamConfigurations));
         }
@@ -48,15 +47,18 @@ export default class DownloadManager extends EventEmitter {
     _readHeader = (event) => {
         const {headerSize} = this.configurations;
         this._updateReadOffset(headerSize);
-        this.dispatchEvent(new ManagerReadyEvent({
-            header: new PvfHeader(new Uint8Array(event.payload.response))
-        }));
+        this.dispatchEvent(new ManagerReadyEvent(
+            new PvfHeader(
+                new Uint8Array(event.payload.response)
+            )
+        ));
         this.headerStream.destroy();
         this.headerStream = null;
     };
     _headerError = () => {
         assert(false, "Could not read file!");
         this.headerStream.destroy();
+        this.headerStream = null;
     };
 
     _probeFile() {
