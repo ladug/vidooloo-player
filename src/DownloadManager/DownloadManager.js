@@ -4,7 +4,7 @@
 import EventEmitter from "../events/EventEmitter";
 import {ManagerReadyEvent, ChunkDownloadedEvent} from "./DownloadManagerEvents";
 import Stream from "../stream/Stream";
-import {StreamSuccess, StreamError} from "../stream/StreamEvents";
+import {StreamSuccess, StreamError,StreamProgress,StreamAbort} from "../stream/StreamEvents";
 import {PvfHeader} from "../pvfreader/PvfReader";
 import {assert, kb} from "../common";
 
@@ -16,8 +16,10 @@ export default class DownloadManager extends EventEmitter {
         useWorkers: false,
         readOffset: 0,
         headerSize: 56,
-        readSize: 128 * kb,
-        streamConfigurations: {}
+        readSize: 128 * kb, //per thread?
+        streamConfigurations: {
+            responseType: "arraybuffer",
+        }
     };
     headerStream = new Stream();
 
@@ -36,7 +38,14 @@ export default class DownloadManager extends EventEmitter {
         if (useWorkers) {
             assert(false, "Not yet supported!")//TODO
         } else {
-            this.streamThreads = (new Array(threads)).fill().map(() => new Stream(streamConfigurations));
+            this.streamThreads = (new Array(threads)).fill().map((a, index) => {
+                const stream = new Stream(streamConfigurations);
+                stream.addEventListener(StreamSuccess, this._chunkSuccess.bind(this, index));
+                stream.addEventListener(StreamError, this._chunkError.bind(this, index));
+                stream.addEventListener(StreamAbort, this._chunkAborted.bind(this, index));
+                stream.addEventListener(StreamProgress, this._chunkProgress.bind(this, index));
+                return stream;
+            });
         }
         this._probeFile();
     }
@@ -75,5 +84,27 @@ export default class DownloadManager extends EventEmitter {
         headerStream.get(src);
     };
 
+    _chunkProgress(streamIndex,event) {
+
+    }
+    _chunkAborted(streamIndex,event) {
+
+    }
+
+    _chunkError(streamIndex,event) {
+
+    }
+
+    _chunkSuccess(streamIndex,event) {
+
+    };
+
+    getChunk() {
+        const {streamThreads} = this,
+            {readOffset, readSize, src} = this.configurations;
+        streamThreads.forEach(stream => {
+
+        })
+    }
 
 }
