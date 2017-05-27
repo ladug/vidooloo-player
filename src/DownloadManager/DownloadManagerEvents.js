@@ -3,11 +3,15 @@
  */
 import Event from "../events/Event";
 export class ChunkDownloadedEvent extends Event {
-    chunk = null;
+    _chunk = null;
 
     constructor(chunk) {
         super();
-        this.chunk = chunk || null;
+        this._chunk = chunk || null;
+    }
+
+    get chunk() {
+        return this._chunk;
     }
 }
 

@@ -85,23 +85,22 @@ export default class DownloadManager extends EventEmitter {
         headerStream.get(src);
     };
 
-    _chunkProgress(streamIndex, event) {
+    _chunkProgress = (event) => {
+        console.info("_chunkProgress", event);
+    };
 
-    }
-
-    _chunkAborted(event) {
-
+    _chunkAborted = (event) => {
+        console.error("Error reading chunk(aborted)!", event);
         this._checkChunkQueue();
-    }
+    };
 
-    _chunkError(event) {
-
+    _chunkError = (event) => {
+        console.error("Error reading chunk!", event);
         this._checkChunkQueue();
-    }
+    };
 
-    _chunkSuccess(event) {
-
-        this.dispatchEvent(new ChunkDownloadedEvent(event))
+    _chunkSuccess = (event) => {
+        this.dispatchEvent(new ChunkDownloadedEvent(event));
         this._checkChunkQueue();
     };
 
@@ -127,7 +126,7 @@ export default class DownloadManager extends EventEmitter {
                         size: size
                     };
                     stream.setHeaders({
-                        "range": ["bytes=", readStart, "-" + (readEnd - 1)].join('')
+                        "range": ["bytes=", readStart, "-", (readEnd - 1)].join('')
                     });
                     stream.get(src);
                 }

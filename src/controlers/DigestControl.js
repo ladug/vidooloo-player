@@ -2,8 +2,8 @@
  * Created by vladi on 27-May-17.
  */
 import EventEmitter from "../events/EventEmitter";
+import DataParser from "../dataparser/DataParser";
 import {ChunkDownloadedEvent} from "../DownloadManager/DownloadManagerEvents";
-import {} from "../DownloadManager/SvfStreamManagerEvents";
 import {HeadersEvent} from "./DigestControlEvents";
 import {assert} from "../common";
 
@@ -12,6 +12,7 @@ export default class DigestControl extends EventEmitter {
     pvfDownloadManager = null;
     svfDownloadManager = null;
     configurations = {};
+    dataParser = new DataParser();
 
     constructor(pvfDownloadManager, svfDownloadManager, configurations) {
         super();
@@ -21,9 +22,9 @@ export default class DigestControl extends EventEmitter {
         };
 
         this.pvfDownloadManager = pvfDownloadManager;
-        this.pvfDownloadManager.addEventListener(ChunkDownloadedEvent, _onPvfChunk);
+        this.pvfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onPvfChunk);
         this.svfDownloadManager = svfDownloadManager;
-        this.svfDownloadManager.addEventListener(ChunkDownloadedEvent, _onSvfChunk);
+        this.svfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onSvfChunk);
     }
 
     _onPvfChunk = (event) => {
