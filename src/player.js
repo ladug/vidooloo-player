@@ -38,6 +38,7 @@ export default class VidoolooPlayer {
 
     createPlayerComponent() {
         const {container, configurations: {width, height}} = this;
+        container.style.cssText = ["width:", width, "px;height:", height, "px"].join('');
         this.canvasPlayer = new CanvasPlayer(container, width, height);
         this.canvasPlayer.addEventListener(CanvasReady, this.onCanvasReady);
         this.canvasPlayer.init();
@@ -57,13 +58,14 @@ export default class VidoolooPlayer {
         this.controls = new PlayerControls();
         this.controls.attachTo(this.container);
     };
-    onDownloadManagerReady = () => {
+    onDownloadManagerReady = (event) => {
+        console.log(event);
         console.log("onDownloadManagerReady");
     };
 }
 
 /*place the player in the position of the script tag*/
 const currentScript = document.currentScript;
-window.vidoolooPlayer = new VidoolooPlayer(currentScript); //pass script tag to the player to use for configurations
+window.vidoolooPlayer = new VidoolooPlayer(currentScript); //pass script tag to the player to use for configurations //TODO: create safe wrapper
 currentScript.parentNode.removeChild(currentScript); //remove the tag, no reason to keep it around
 
