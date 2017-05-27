@@ -9,6 +9,7 @@ export default class Stream extends EventEmitter {
     _loading = false;
     _destroyed = false;
     _configurations = {};
+    _headers = {};
 
     constructor(configurations) {
         super();
@@ -53,12 +54,26 @@ export default class Stream extends EventEmitter {
         }));
     };
 
+    _applyHeaders = () => {
+        const {_headers} = this;
+        Object.keys(_headers).forEach(header => {
+            this._http.setRequestHeader(header, _headers[header])
+        })
+    };
+
     set(configurations) {
         delete configurations.onload;
         delete configurations.ontimeout;
         delete configurations.onerror;
         delete configurations.onProgress;
         this._http = Object.assign(this._http, configurations);
+    }
+
+    setHeaders(headers) {
+        this._headers = {
+            ...this._headers,
+            ...headers
+        }
     }
 
     abort() {
@@ -73,6 +88,7 @@ export default class Stream extends EventEmitter {
         if (!this._loading && !this._destroyed) {
             this._loading = true;
             this._http.open("GET", url, true);
+            this._applyHeaders();
             this._http.send();
         }
     }
@@ -81,6 +97,7 @@ export default class Stream extends EventEmitter {
         if (!this._loading && !this._destroyed) {
             this._loading = true;
             this._http.open("POST", url, true);
+            this._applyHeaders();
             this._http.send();
         }
     }
@@ -94,7 +111,6 @@ export default class Stream extends EventEmitter {
     }
 
     destroy() { //cleanup
-        this._http.response = null;
         this._http.onload = null;
         this._http.ontimeout = null;
         this._http.onerror = null;
@@ -102,6 +118,6 @@ export default class Stream extends EventEmitter {
         this._http = null;
         this._configurations = {};
         this._destroyed = true;
-        super.destroy.apply(this);
+        this.destroyEvents();
     }
 }

@@ -27,7 +27,7 @@ export default class WorkerLoader extends EventEmitter {
                 })
             )
         }
-        this.destroy(); //Component work is done, unlink all events
+        this.destroyEvents(); //Component work is done, unlink all events
     };
 
     downloadBuffer(workerUrl) {
@@ -55,7 +55,7 @@ export default class WorkerLoader extends EventEmitter {
                 })
             );
             http.onload = http.ontimeout = http.onerror = undefined;//unlink the http
-            this.destroy(); //Component work is done, unlink all events
+            this.destroyEvents(); //Component work is done, unlink all events
         };
         http.send();
     }
