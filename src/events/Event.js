@@ -9,6 +9,10 @@ export default class Event extends BasicEvent {
         this.constructor.prototype._uid = this.constructor.prototype._uid || getUid();
     }
 
+    get uid() {
+        return this.constructor.prototype._uid;
+    }
+
     static get uid() {
         return this.prototype._uid || (new this()).uid;
     }

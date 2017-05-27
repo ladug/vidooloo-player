@@ -73,16 +73,17 @@ export default class EventEmitter {
             if (this.isEventDispatching(event.uid)) {
                 throw new Error("Event dispatch cause the same event to dispatch ( event-seption ! )")
             }
+            console.log("dispatching", event, event.uid)
             this._markEventDispatchStart(event.uid);
             dispatchEvent(this.uid, event);
             this._markEventDispatchEnd(event.uid);
 
-            !this.isDispatchActive && this._destroyAfterDispatch && this.destroy();
+            !this.isDispatchActive && this._destroyAfterDispatch && this.destroyEvents();
         }
         return this;
     }
 
-    destroy() {
+    destroyEvents() {
         if (this.isDispatchActive) {
             this._destroyAfterDispatch = true;
         } else {
