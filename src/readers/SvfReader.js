@@ -38,7 +38,7 @@ export class SvfHeader {
             _type: readByteString(headerBytes),
             _version: readByteString(headerBytes, 4),
             _subVersion: headerBytes[8],
-            _headersSize: ( headerBytes[9] << 16 | headerBytes[10] << 8 | headerBytes[11])
+            _headersSize: ( headerBytes[9] << 16 | headerBytes[10] << 8 | headerBytes[11] )
         };
         this._size = this._basicInfo._headersSize + 12; //headers + file type and versions
     }

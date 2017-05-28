@@ -33,6 +33,7 @@ export default class SvfStreamManager extends EventEmitter {
     }
 
     _onChunkSuccess = (event) => {
+        this.configurations.readOffset = event.payload.chunkData.offset + event.payload.chunkData.size;
         this.dispatchEvent(new ChunkDownloadedEvent(event));
     };
     _onChunkError = (event) => {
