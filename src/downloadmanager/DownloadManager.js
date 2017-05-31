@@ -24,12 +24,15 @@ export default class DownloadManager extends EventEmitter {
     };
     headerStream = new Stream();
 
-    constructor(configurations, streamConfigurations) {
+    constructor(configurations = {}, streamConfigurations = {}) {
         super();
         this.configurations = {
             ...this.configurations,
             ...configurations,
-            streamConfigurations
+            streamConfigurations: {
+                ...this.streamConfigurations,
+                ...streamConfigurations
+            }
         };
     }
 

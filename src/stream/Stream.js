@@ -13,7 +13,7 @@ export default class Stream extends EventEmitter {
     _startTime = null;
     _chunkData = null;
 
-    constructor(configurations) {
+    constructor(configurations = {}) {
         super();
         this._http = new XMLHttpRequest();
         this._configurations = {

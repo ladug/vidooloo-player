@@ -21,7 +21,7 @@ export default class SvfStreamManager extends EventEmitter {
         readSize: 32 * kb,
     };
 
-    constructor(configurations) {
+    constructor(configurations = {}) {
         super();
         this.configurations = {
             ...this.configurations,

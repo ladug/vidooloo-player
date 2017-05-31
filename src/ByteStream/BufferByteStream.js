@@ -4,7 +4,7 @@
 import {assert, last, lastIndex, mergeBuffers} from "../common";
 
 const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
-        if (lastChunkDataSize <= 0) {
+        if (lastChunkDataSize <= 0 || chunks.length < 2) {
             return null;
         }
         chunks[0] = chunks[0].slice(firstChunkOffset);
@@ -20,7 +20,7 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         for (let i = 0; i < missingBytes; i++) {
             result.push(secondChunk[i])
         }
-        return result;
+        return new Uint8Array(result);
     },
     read4 = (bytes, offset) => {
         const byte = bytes[offset] >> 4; //shift 4 right to get the first 4 bits
@@ -51,14 +51,29 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
 export default class BufferByteStream {
     chunks = [];
     chunksData = [];
-    activeChunk = 0;
+    chunkIndex = 0;
     chunkOffset = 0;
     offset = 0;
     size = 0;
 
+    configurations = {
+        cacheReadToBlobs: false,
+        cacheOffset: 0,
+        cacheChunkSize: 0
+    };
 
-    constructor(chunks) {
-        chunks.forEach(chunk => this.addChunk(chunk));
+    constructor(chunks, configurations = {}) {
+        this.configurations = {
+            ...this.configurations,
+            ...configurations
+        };
+        chunks.forEach(
+            chunk => this.addChunk(chunk)
+        );
+    }
+
+    get remaining() {
+        return this.size - this.offset;
     }
 
     get length() {
@@ -70,23 +85,19 @@ export default class BufferByteStream {
     }
 
     get currentChunkData() {
-        return this.chunksData[this.activeChunk];
+        return this.chunksData[this.chunkIndex];
     }
 
     get currentChunk() {
-        return this.chunks[this.activeChunk];
-    }
-
-    get nextChunkData() {
-        return this.chunksData[this.activeChunk + 1];
+        return this.chunks[this.chunkIndex] || new Uint8Array(0);
     }
 
     get nextChunk() {
-        return this.chunks[this.activeChunk + 1];
+        return this.chunks[this.chunkIndex + 1] || new Uint8Array(0);
     }
 
-    _updateActiveChunk(chunksRead) {
-        this.activeChunk += chunksRead;
+    _updateChunkIndex(chunksRead) {
+        this.chunkIndex += chunksRead;
         this.chunkOffset = 0;
     }
 
@@ -100,13 +111,13 @@ export default class BufferByteStream {
         const {chunkOffset, currentChunk, currentChunkData: {size}} = this,
             missingBytes = (chunkOffset + readSize) - size;
         if (missingBytes > 0) {
-            this._updateActiveChunk(1);
+            this._updateChunkIndex(1);
             this._updateOffset(readSize, missingBytes);
             return operator(
                 getSplitData(currentChunk, chunkOffset, this.nextChunk, missingBytes)
             );
         }
-        this._updateOffset(readSize, readSize);
+        this._updateOffset(readSize);
         return operator(currentChunk, chunkOffset);
     }
 
@@ -128,11 +139,11 @@ export default class BufferByteStream {
         const {chunkOffset, currentChunk, offset, currentChunkData: {size}} = this,
             currentChunkRemaining = size - chunkOffset;
         if (readSize > currentChunkRemaining) {
-            const {chunks, chunksData, activeChunk} = this,
+            const {chunks, chunksData, chunkIndex} = this,
                 readOffset = offset + readSize,
-                readChunksData = chunksData.slice(activeChunk).filter(({end}) => end <= readOffset),
+                readChunksData = chunksData.slice(chunkIndex).filter(({end}) => end <= readOffset),
                 lastChunkDataSize = readOffset - last(readChunksData).start;
-            this._updateActiveChunk(lastIndex(readChunksData)); // minus the current chunk
+            this._updateChunkIndex(lastIndex(readChunksData)); // minus the current chunk
             this._updateOffset(readSize, lastChunkDataSize);
             return getCrossChunkData(
                 readChunksData.map(({chunkIndex}) => chunks[chunkIndex]),
@@ -153,7 +164,7 @@ export default class BufferByteStream {
     read8() {
         const {chunkOffset, currentChunk, currentChunkData: {size}} = this;
         if (chunkOffset === size) {
-            this._updateActiveChunk(1);
+            this._updateChunkIndex(1);
             this._updateOffset(1);
             return read8(this.nextChunk);
         } else {

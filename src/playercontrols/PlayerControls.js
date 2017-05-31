@@ -11,7 +11,7 @@ export default class PlayerControls extends EventEmitter {
     container = document.createElement("div");
     statusBar = new PlayerStatusBar();
 
-    constructor(configurations) {
+    constructor(configurations={}) {
         super();
         this.configurations = {
             ...this.configurations,

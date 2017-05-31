@@ -15,7 +15,7 @@ export default class DigestControl extends EventEmitter {
     configurations = {};
     dataParser = new DataParser();
 
-    constructor(pvfDownloadManager, svfDownloadManager, configurations) {
+    constructor(pvfDownloadManager, svfDownloadManager, configurations = {}) {
         super();
         this.configurations = {
             ...this.configurations,
