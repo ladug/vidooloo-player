@@ -20,6 +20,12 @@ export const assert = (condition, message) => {
         });
         return resBuffer;
     },
+    last = (arr) => {
+        return arr[arr.length - 1];
+    },
+    lastIndex = (arr) => {
+        return arr.length - 1;
+    },
     sec = 1000,
     min = 60000,
     hour = 3600000,

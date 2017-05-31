@@ -1,19 +1,28 @@
 /**
  * Created by vladi on 31-May-17.
  */
-import {assert, mergeBuffers} from "../common";
+import {assert, last, lastIndex, mergeBuffers} from "../common";
 
-const getSplitData = (firstChunk, firstChunkOffset, secondChunk, missingBytes) => {
+const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
+        if (lastChunkDataSize <= 0) {
+            return null;
+        }
+        chunks[0] = chunks[0].slice(firstChunkOffset);
+        chunks[lastIndex(chunks)] = last(chunks).slice(0, lastChunkDataSize);
+        return mergeBuffers(chunks);
+    },
+    getSplitData = (firstChunk, firstChunkOffset, secondChunk, missingBytes) => {
         //super fast for under 50 bytes operations, otherwise best to use mergeBuffers or alike
         const result = [];
         for (let i = 0; i < missingBytes; i++) {
-            result.push(firstChunk[firstChunkOffset++]);
+            result.push(firstChunk[firstChunkOffset + i]);
         }
         for (let i = 0; i < missingBytes; i++) {
             result.push(secondChunk[i])
         }
         return result;
-    }, read4 = (bytes, offset) => {
+    },
+    read4 = (bytes, offset) => {
         const byte = bytes[offset] >> 4; //shift 4 right to get the first 4 bits
         return [
             byte >> 3, //shift 3 right to get the first bit
@@ -21,8 +30,8 @@ const getSplitData = (firstChunk, firstChunkOffset, secondChunk, missingBytes) =
             byte & 2 >> 1, // same only compare to 0010, then shift right once to expose the bit
             byte & 1 //compare to 0001 if matches then 1 else 0
         ]
-
-    }, read8 = (bytes, offset = 0) => {
+    },
+    read8 = (bytes, offset = 0) => {
         return bytes[offset];
     },
     read16 = (bytes, offset = 0) => {
@@ -81,9 +90,9 @@ export default class BufferByteStream {
         this.chunkOffset = 0;
     }
 
-    _updateOffset(readSize) {
+    _updateOffset(readSize, chunkReadSize) {
         this.offset += readSize;
-        this.chunkOffset += readSize;
+        this.chunkOffset += chunkReadSize;
         return this.chunkOffset;
     }
 
@@ -92,12 +101,12 @@ export default class BufferByteStream {
             missingBytes = (chunkOffset + readSize) - size;
         if (missingBytes > 0) {
             this._updateActiveChunk(1);
-            this._updateOffset(missingBytes);
+            this._updateOffset(readSize, missingBytes);
             return operator(
                 getSplitData(currentChunk, chunkOffset, this.nextChunk, missingBytes)
             );
         }
-        this._updateOffset(readSize);
+        this._updateOffset(readSize, readSize);
         return operator(currentChunk, chunkOffset);
     }
 
@@ -105,13 +114,35 @@ export default class BufferByteStream {
         const {chunks, chunksData, size} = this,
             chunkSize = uint8Chunk.byteLength;
         assert(chunkSize >= 4, "Minimum chunk is 4 bytes!");
-        chunks.push(uint8Chunk);
         chunksData.push({
             start: size,
             end: size + chunkSize,
-            size: chunkSize
+            size: chunkSize,
+            chunkIndex: chunks.length
         });
+        chunks.push(uint8Chunk);
         this.size += chunkSize;
+    }
+
+    read(readSize) {
+        const {chunkOffset, currentChunk, offset, currentChunkData: {size}} = this,
+            currentChunkRemaining = size - chunkOffset;
+        if (readSize > currentChunkRemaining) {
+            const {chunks, chunksData, activeChunk} = this,
+                readOffset = offset + readSize,
+                readChunksData = chunksData.slice(activeChunk).filter(({end}) => end <= readOffset),
+                lastChunkDataSize = readOffset - last(readChunksData).start;
+            this._updateActiveChunk(lastIndex(readChunksData)); // minus the current chunk
+            this._updateOffset(readSize, lastChunkDataSize);
+            return getCrossChunkData(
+                readChunksData.map(({chunkIndex}) => chunks[chunkIndex]),
+                chunkOffset,
+                lastChunkDataSize
+            );
+        } else {
+            this._updateOffset(readSize);
+            return currentChunk.slice(chunkOffset, this.chunkOffset);
+        }
     }
 
     read4() {
@@ -147,87 +178,3 @@ export default class BufferByteStream {
         return this._read(4, read32);
     }
 }
-
-
-/**
- * Created by vladi on 28-May-17.
- */
-
-/*
- export default class ByteStream {
- bytes = new Uint8Array(0);
- offset = 0;
-
- constructor(uint8Array, offset) {
- this.bytes = uint8Array;
- this.offset = offset || 0;
- }
-
- get length() {
- return this.bytes.length;
- }
-
- get hasData() {
- return this.offset < this.length;
- }
-
- updateOffset(readSize) {
- this.offset += readSize;
- }
-
- read4() {
- const {offset, bytes} = this,
- byte = bytes[offset] >> 4; //shift 4 right to get the first 4 bits
- return [
- byte >> 3, //shift 3 right to get the first bit
- byte & 4 >> 2, // (1111 & 0100 -> 0100), (1010 & 0100 -> 0000), then shift 2 to the right to get the bit
- byte & 2 >> 1, // same only compare to 0010, then shift right once to expose the bit
- byte & 1 //compare to 0001 if matches then 1 else 0
- ]
- }
-
- read8() {
- const {offset, bytes} = this;
- this.updateOffset(1);
- return bytes[offset];
- }
-
- read16() {
- const {offset, bytes} = this;
- this.updateOffset(2);
- return bytes[offset] << 8 | bytes[offset + 1];
- }
-
- read20() {
- const {offset, bytes} = this;
- this.updateOffset(3);
- return (bytes[0] & 15) << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; //un mark the first 4 bits then read 24
- }
-
- read24() {
- const {offset, bytes} = this;
- this.updateOffset(3);
- return bytes[offset] << 16 | bytes[offset + 1] << 8 | bytes[offset + 2];
- }
-
- read32() {
- const {offset, bytes} = this;
- this.updateOffset(4);
- return bytes[offset] << 24 | bytes[offset + 1] << 16 | bytes[offset + 2] << 8 | bytes[offset + 3];
- }
-
- read(size) {
- const {offset, bytes} = this;
- this.updateOffset(size);
- return bytes.subarray(offset, offset + size);
- }
-
- getRemaining() {
- return this.bytes.subarray(this.offset, this.length);
- }
-
- destroy() {
- this.bytes = new Uint8Array(0);
- this.offset = 0;
- }
- }*/

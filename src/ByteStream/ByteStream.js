@@ -67,11 +67,11 @@ export default class ByteStream {
     read(size) {
         const {offset, bytes} = this;
         this.updateOffset(size);
-        return bytes.subarray(offset, offset + size);
+        return bytes.slice(offset, offset + size);
     }
 
     getRemaining() {
-        return this.bytes.subarray(this.offset, this.length);
+        return this.bytes.slice(this.offset, this.length);
     }
 
     destroy() {
