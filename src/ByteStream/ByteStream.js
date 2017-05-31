@@ -3,12 +3,20 @@
  */
 
 export default class ByteStream {
-    bytes = null;
+    bytes = new Uint8Array(0);
     offset = 0;
-    size = 0;
 
-    constructor(uint8Array) {
+    constructor(uint8Array, offset) {
         this.bytes = uint8Array;
+        this.offset = offset || 0;
+    }
+
+    get length() {
+        return this.bytes.length;
+    }
+
+    get hasData() {
+        return this.offset < this.length;
     }
 
     updateOffset(readSize) {
@@ -60,5 +68,14 @@ export default class ByteStream {
         const {offset, bytes} = this;
         this.updateOffset(size);
         return bytes.subarray(offset, offset + size);
+    }
+
+    getRemaining() {
+        return this.bytes.subarray(this.offset, this.length);
+    }
+
+    destroy() {
+        this.bytes = new Uint8Array(0);
+        this.offset = 0;
     }
 }

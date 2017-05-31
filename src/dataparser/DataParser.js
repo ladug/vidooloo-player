@@ -24,7 +24,6 @@ export default class DataParser extends EventEmitter {
         if (!svfHeader.isHeaderComplete()) {
             return this.dispatchEvent(new MissingHeaderEvent());
         }
-
         const svfData = svfHeader.extractExtraBytes();
         this.svfChunks = [{
             chunk: svfData,
@@ -34,7 +33,6 @@ export default class DataParser extends EventEmitter {
             }
         }];
         this.svfHeader = svfHeader;
-
     }
 
     addPvfChunk(chunk, data) {
