@@ -43,7 +43,6 @@ export default class Stream extends EventEmitter {
             type: "success",
             chunkData: this._chunkData
         }));
-
     };
     _onError = ({type}) => {
         this._loading = false;
@@ -65,7 +64,6 @@ export default class Stream extends EventEmitter {
             chunkData: this._chunkData
         }));
     };
-
     _applyHeaders = () => {
         const {_headers} = this;
         Object.keys(_headers).forEach(header => {
