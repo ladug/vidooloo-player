@@ -22,7 +22,7 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         }
         return new Uint8Array(result);
     },
-    read4 = (bytes, offset) => {
+    read4 = (bytes, offset = 0) => {
         const byte = bytes[offset] >> 4; //shift 4 right to get the first 4 bits
         return [
             byte >> 3, //shift 3 right to get the first bit
@@ -45,8 +45,10 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
     },
     read32 = (bytes, offset = 0) => {
         return bytes[offset] << 24 | bytes[offset + 1] << 16 | bytes[offset + 2] << 8 | bytes[offset + 3];
+    },
+    readChar4 = (bytes, offset = 0) => {
+        return bytes.slice(offset, offset + 4).map(byte => String.fromCharCode(byte)).join('');
     };
-
 
 export default class BufferByteStream {
     chunks = [];
@@ -121,6 +123,12 @@ export default class BufferByteStream {
         return operator(currentChunk, chunkOffset);
     }
 
+    reset() {
+        this.offset =
+            this.chunkIndex =
+                this.chunkOffset = 0;
+    }
+
     addChunk(uint8Chunk) {
         const {chunks, chunksData, size} = this,
             chunkSize = uint8Chunk.byteLength;
@@ -154,6 +162,10 @@ export default class BufferByteStream {
             this._updateOffset(readSize);
             return currentChunk.slice(chunkOffset, this.chunkOffset);
         }
+    }
+
+    readChar4() {
+        return this._read(4, readChar4);
     }
 
     read4() {
