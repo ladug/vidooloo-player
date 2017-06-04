@@ -53,44 +53,26 @@ const readHeaderMap = (stream, version, subversion) => {
 
 export class SvfHeader {
     _basicInfo = null;
-    _dataSize = null;
     _size = null;
-    _headerStream = null;
     _extraBytes = null;
-
-    _headerComplete = false;
     _videoMap = {};
     _audioMap = {};
     _videoConfigurations = {};
     _audioConfigurations = {};
 
-    constructor(chunkArray) {
-        this._dataSize = chunkArray.reduce((total, chunk) => (total + chunk.data.size), 0);
-        if (!this._basicInfo) {
-            this._readBasicInfo(chunkArray[0].chunk)
-        }
-        if (this.isHeaderComplete()) {
-            const buffer = mergeBuffers(chunkArray.map(({chunk}) => chunk));
-            this._headerStream = new ByteStream(buffer, 12);
-            this._readSvfHeader();
-            this._dataSize = this._headerStream.offset;
-
-            this._headerComplete = true;
-            this._extraBytes = this._headerStream.getRemaining();
-            //cleanup
-            this._headerStream.destroy();
-            this._headerStream = null;
-        }
+    constructor(bufferStream) {
+        this._readBasicInfo(bufferStream)
+        this._readSvfHeader();
+        this._size = bufferStream.offset;
     }
 
-    _readBasicInfo(headerBytes) {
+    _readBasicInfo(bufferStream) {
         this._basicInfo = {
-            _type: readByteString(headerBytes),
-            _version: readByteString(headerBytes, 4),
-            _subVersion: headerBytes[8],
-            _headersSize: ( headerBytes[9] << 16 | headerBytes[10] << 8 | headerBytes[11] )
+            _type: bufferStream.readChar4(),
+            _version: bufferStream.readChar4(),
+            _subVersion: bufferStream.read8(),
+            _headersSize: bufferStream.read24()
         };
-        this._size = this._basicInfo._headersSize + 12 + 512; //adding 512 config overhead
     }
 
     _readSvfHeader() {
@@ -109,11 +91,7 @@ export class SvfHeader {
         this._audioConfigurations = readAudioConfig(stream, _version, _subVersion);
     }
 
-    isHeaderComplete() {
-        return this._headerComplete || (this._dataSize >= this._size);
-    }
-
-    get size() {
+    get length() {
         return this._size;
     }
 

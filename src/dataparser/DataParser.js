@@ -4,41 +4,24 @@
 import EventEmitter from "../events/EventEmitter";
 import PvfReader from "../readers/PvfReader";
 import SvfReader, {SvfHeader} from "../readers/SvfReader";
-import {MissingHeaderEvent} from "./DataParserEvents";
+import {} from "./DataParserEvents";
+import BufferByteStream from "../ByteStream/BufferByteStream";
 
 export default class DataParser extends EventEmitter {
-    pvfChunks = [];
-    svfChunks = [];
+    pvfStream = new BufferByteStream();
+    svfStream = new BufferByteStream();
     svfHeader = null;
     samples = [];
 
-    addSvfChunk(chunk, data) {
-        this.svfChunks.push({chunk, data});
+    addSvfChunk(chunk) {
+        this.svfStream.addChunk(chunk);
         if (!this.svfHeader) {
-            this._getSvfHeader();
+            this.svfHeader = new SvfHeader(this.svfStream);
         }
     }
 
-    _getSvfHeader() {
-        const svfHeader = new SvfHeader(this.svfChunks);
-        if (!svfHeader.isHeaderComplete()) {
-            return this.dispatchEvent(new MissingHeaderEvent());
-        }
-        const svfData = svfHeader.extractExtraBytes();
-        this.svfChunks = [{
-            chunk: svfData,
-            data: {
-                offset: svfHeader.size,
-                size: svfData.length
-            }
-        }];
-        this.svfHeader = svfHeader;
+    addPvfChunk(chunk) {
+        this.pvfStream.addChunk(chunk);
     }
 
-    addPvfChunk(chunk, data) {
-        this.pvfChunks.push({
-            chunk,
-            data
-        });
-    }
 }
