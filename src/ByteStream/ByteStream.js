@@ -64,6 +64,12 @@ export default class ByteStream {
         return bytes[offset] << 24 | bytes[offset + 1] << 16 | bytes[offset + 2] << 8 | bytes[offset + 3];
     }
 
+    readChar4() {
+        const {offset, bytes} = this;
+        this.updateOffset(4);
+        return bytes.slice(offset,offset+4).map(byte => String.fromCharCode(byte)).join('');
+    }
+
     read(size) {
         const {offset, bytes} = this;
         this.updateOffset(size);

@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 27-May-17.
  */
-import {assert, readByteString, mergeBuffers} from "../common";
+import {assert} from "../common";
 import ByteStream from "../ByteStream/ByteStream";
 export default class SvfReader {
     constructor() {
@@ -62,7 +62,7 @@ export class SvfHeader {
 
     constructor(bufferStream) {
         this._readBasicInfo(bufferStream)
-        this._readSvfHeader();
+        this._readSvfHeader(bufferStream);
         this._size = bufferStream.offset;
     }
 
@@ -75,20 +75,20 @@ export class SvfHeader {
         };
     }
 
-    _readSvfHeader() {
-        const {_headerStream: stream, _basicInfo: {_version, _subVersion}} = this;
+    _readSvfHeader(bufferStream) {
+        const {_basicInfo: {_version, _subVersion}} = this;
         this._videoMap = readHeaderMap(
-            new ByteStream(stream.read(stream.read16())),
+            new ByteStream(bufferStream.read(bufferStream.read16())),
             _version,
             _subVersion
         );
         this._audioMap = readHeaderMap(
-            new ByteStream(stream.read(stream.read16())),
+            new ByteStream(bufferStream.read(bufferStream.read16())),
             _version,
             _subVersion
         );
-        this._videoConfigurations = readVideoConfig(stream, _version, _subVersion);
-        this._audioConfigurations = readAudioConfig(stream, _version, _subVersion);
+        this._videoConfigurations = readVideoConfig(bufferStream, _version, _subVersion);
+        this._audioConfigurations = readAudioConfig(bufferStream, _version, _subVersion);
     }
 
     get length() {

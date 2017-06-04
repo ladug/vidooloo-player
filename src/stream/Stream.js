@@ -10,7 +10,6 @@ export default class Stream extends EventEmitter {
     _destroyed = false;
     _configurations = {};
     _headers = {};
-    _startTime = null;
     _chunkData = null;
 
     constructor(configurations = {}) {

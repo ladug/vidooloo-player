@@ -15,9 +15,7 @@ export default class DataParser extends EventEmitter {
 
     addSvfChunk(chunk) {
         this.svfStream.addChunk(chunk);
-        if (!this.svfHeader) {
-            this.svfHeader = new SvfHeader(this.svfStream);
-        }
+        this.svfHeader = this.svfHeader || new SvfHeader(this.svfStream);
     }
 
     addPvfChunk(chunk) {
