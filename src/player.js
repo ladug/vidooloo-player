@@ -91,7 +91,7 @@ export default class VidoolooPlayer {
             }
         );
         this.digester.addEventListener(HeadersEvent, this._onDigestHeaders);
-        this.digester.start();
+        this.digester.init();
     };
 }
 

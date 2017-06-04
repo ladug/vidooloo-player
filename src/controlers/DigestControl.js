@@ -37,7 +37,7 @@ export default class DigestControl extends EventEmitter {
         this.dataParser.addSvfChunk(new Uint8Array(event.chunk));
     };
 
-    start() {
+    init() {
         const {pvfDownloadManager, svfDownloadManager} = this;
         pvfDownloadManager.readChunks(1);
         svfDownloadManager.readChunk();
