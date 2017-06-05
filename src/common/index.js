@@ -7,8 +7,11 @@ export const assert = (condition, message) => {
             throw new Error(message);
         }
     },
+    slice = (mixed, start, end) => {
+        return Array.prototype.slice.call(mixed, start, end);
+    },
     readByteString = (bytes, offset = 0, length = 4) => {
-        return (new Array(length)).fill(offset).map((offset, index) => String.fromCharCode(bytes[offset + index])).join('');
+        return slice(bytes, offset, offset + length).map(byte => String.fromCharCode(byte)).join('');
     },
     mergeBuffers = (buffers) => {
         const bufferSize = buffers.reduce((total, buffer) => (total + buffer.length), 0),
