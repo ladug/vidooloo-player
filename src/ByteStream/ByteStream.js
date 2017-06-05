@@ -1,6 +1,7 @@
 /**
  * Created by vladi on 28-May-17.
  */
+import {slice} from '../common';
 
 export default class ByteStream {
     bytes = new Uint8Array(0);
@@ -67,7 +68,7 @@ export default class ByteStream {
     readChar4() {
         const {offset, bytes} = this;
         this.updateOffset(4);
-        return bytes.slice(offset,offset+4).map(byte => String.fromCharCode(byte)).join('');
+        return slice(bytes, offset, offset + 4).map(byte => String.fromCharCode(byte)).join('');
     }
 
     read(size) {
