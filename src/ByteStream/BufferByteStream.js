@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 31-May-17.
  */
-import {assert, last, lastIndex, mergeBuffers, slice} from "../common";
+import {assert, last, lastIndex, mergeBuffers, slice, filterSome} from "../common";
 
 const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         if (lastChunkDataSize <= 0 || chunks.length < 2) {
@@ -148,7 +148,10 @@ export default class BufferByteStream {
         if (readSize > currentChunkRemaining) {
             const {chunks, chunksData, chunkIndex} = this,
                 readOffset = offset + readSize,
-                readChunksData = chunksData.slice(chunkIndex).filter(({end}) => end <= readOffset),
+                readChunksData = filterSome(
+                    chunksData.slice(chunkIndex),
+                    ({end}) => end <= readOffset
+                ),
                 lastChunkDataSize = readOffset - last(readChunksData).start;
             this._updateChunkIndex(lastIndex(readChunksData)); // minus the current chunk
             this._updateOffset(readSize, lastChunkDataSize);

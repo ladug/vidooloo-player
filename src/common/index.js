@@ -7,6 +7,11 @@ export const assert = (condition, message) => {
             throw new Error(message);
         }
     },
+    filterSome = (array,filterFunction) => {
+        const filtered = [];
+        array.every((item,index,original)=>filterFunction(item,index,original) && filtered.push(item));
+        return filtered;
+    },
     slice = (mixed, start, end) => {
         return Array.prototype.slice.call(mixed, start, end);
     },
