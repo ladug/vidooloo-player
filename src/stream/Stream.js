@@ -65,9 +65,9 @@ export default class Stream extends EventEmitter {
         }));
     };
     _applyHeaders = () => {
-        const {_headers} = this;
+        const {_headers, _http} = this;
         Object.keys(_headers).forEach(header => {
-            this._http.setRequestHeader(header, _headers[header])
+            _http.setRequestHeader(header, _headers[header])
         })
     };
 

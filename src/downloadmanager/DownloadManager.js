@@ -30,7 +30,7 @@ export default class DownloadManager extends EventEmitter {
             ...this.configurations,
             ...configurations,
             streamConfigurations: {
-                ...this.streamConfigurations,
+                ...this.configurations.streamConfigurations,
                 ...streamConfigurations
             }
         };
@@ -103,7 +103,7 @@ export default class DownloadManager extends EventEmitter {
     };
 
     _chunkSuccess = (event) => {
-        this.dispatchEvent(new ChunkDownloadedEvent(event));
+        this.dispatchEvent(new ChunkDownloadedEvent(event, "DM"));
         this._checkChunkQueue();
     };
 

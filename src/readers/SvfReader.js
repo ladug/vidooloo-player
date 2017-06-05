@@ -54,7 +54,6 @@ const readHeaderMap = (stream, version, subversion) => {
 export class SvfHeader {
     _basicInfo = null;
     _size = null;
-    _extraBytes = null;
     _videoMap = {};
     _audioMap = {};
     _videoConfigurations = {};
@@ -93,11 +92,5 @@ export class SvfHeader {
 
     get length() {
         return this._size;
-    }
-
-    extractExtraBytes() {
-        const {_extraBytes} = this;
-        this._extraBytes = null;
-        return _extraBytes;
     }
 }

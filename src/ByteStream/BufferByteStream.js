@@ -1,7 +1,7 @@
 /**
  * Created by vladi on 31-May-17.
  */
-import {assert, last, lastIndex, mergeBuffers} from "../common";
+import {assert, last, lastIndex, mergeBuffers, slice} from "../common";
 
 const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         if (lastChunkDataSize <= 0 || chunks.length < 2) {
@@ -47,7 +47,7 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         return bytes[offset] << 24 | bytes[offset + 1] << 16 | bytes[offset + 2] << 8 | bytes[offset + 3];
     },
     readChar4 = (bytes, offset = 0) => {
-        return bytes.slice(offset, offset + 4).map(byte => String.fromCharCode(byte)).join('');
+        return slice(bytes, offset, offset + 4).map(byte => String.fromCharCode(byte)).join('');
     };
 
 export default class BufferByteStream {
@@ -64,7 +64,7 @@ export default class BufferByteStream {
         cacheChunkSize: 0
     };
 
-    constructor(chunks, configurations = {}) {
+    constructor(chunks = [], configurations = {}) {
         this.configurations = {
             ...this.configurations,
             ...configurations
@@ -103,10 +103,9 @@ export default class BufferByteStream {
         this.chunkOffset = 0;
     }
 
-    _updateOffset(readSize, chunkReadSize) {
+    _updateOffset(readSize, chunkReadSize = 0) {
         this.offset += readSize;
-        this.chunkOffset += chunkReadSize;
-        return this.chunkOffset;
+        this.chunkOffset += readSize + chunkReadSize;
     }
 
     _read(readSize, operator) {
@@ -131,7 +130,7 @@ export default class BufferByteStream {
 
     addChunk(uint8Chunk) {
         const {chunks, chunksData, size} = this,
-            chunkSize = uint8Chunk.byteLength;
+            chunkSize = uint8Chunk.length;
         assert(chunkSize >= 4, "Minimum chunk is 4 bytes!");
         chunksData.push({
             start: size,
