@@ -57,6 +57,9 @@ export default class BufferByteStream {
     chunkOffset = 0;
     offset = 0;
     size = 0;
+    _isSnap = false;
+    _snapOffset = 0;
+    _snapChunk = 0;
 
     configurations = {
         cacheReadToBlobs: false,
@@ -120,6 +123,28 @@ export default class BufferByteStream {
         }
         this._updateOffset(readSize);
         return operator(currentChunk, chunkOffset);
+    }
+
+    snap() {
+        const {offset, chunkIndex, chunkOffset} = this;
+        this._isSnap = true;
+        this._snapOffset = offset;
+        this._snapChunkIndex = chunkIndex;
+        this._snapChunkOffset = chunkOffset;
+    }
+
+    rollback() {
+        if (this._isSnap) {
+            const {_snapOffset, _snapChunkIndex, _snapChunkOffset} = this;
+            this._isSnap = false;
+            this.offset = _snapOffset;
+            this.chunkIndex = _snapChunkIndex;
+            this.chunkOffset = _snapChunkOffset;
+        }
+    }
+
+    commit() {
+        this._isSnap = false;
     }
 
     reset() {
