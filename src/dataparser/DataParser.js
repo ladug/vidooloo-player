@@ -14,17 +14,17 @@ const SAMPLE_EXTRA_TWO_FLAG = 3;
 
 const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / skipFactor,
     getPvfSampleHeader = (pvfStream) => ({
-        flags: pvfStream.readChar4(),
+        flags: pvfStream.read4(),
         size: pvfStream.read20(),
         duration: pvfStream.read16(),
     }),
     getSvfSampleHeader = (svfStream) => ({
-        size: svfStream.read16(),
+        size: svfStream.read24(),
         factor: svfStream.read8()
     }),
     getSampleHeaders = (pvfStream, svfStream) => {
-        const {flags, size, duration} = getPvfSampleHeader(pvfStream),
-            {size: dataChunkSize, factor} = getSvfSampleHeader(svfStream),
+        const {size: dataChunkSize, factor} = getSvfSampleHeader(svfStream),
+            {flags, size, duration} = getPvfSampleHeader(pvfStream),
             svfChunkSize = getSvfChunkSize(size, factor),
             pvfChunkSize = size - svfChunkSize;
         return {
@@ -45,7 +45,6 @@ export default class DataParser extends EventEmitter {
     svfHeader = null;
     pvfHeader = null;
     samples = [];
-    lastSampleHeader
 
     get sampleCount() {
         return this.samples.length;
@@ -72,6 +71,7 @@ export default class DataParser extends EventEmitter {
         if (!pvfStream.length || !pvfStream.remaining || !svfStream.length || !svfStream.remaining) {
             return;
         }
+        console.log(getSampleHeaders(pvfStream, svfStream));
 
 
     }

@@ -38,7 +38,7 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
         return bytes[offset] << 8 | bytes[offset + 1];
     },
     read20 = (bytes, offset = 0) => {
-        return (bytes[0] & 15) << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; //un mark the first 4 bits then read 24
+        return (bytes[offset] & 15) << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; //un mark the first 4 bits then read 24
     },
     read24 = (bytes, offset = 0) => {
         return bytes[offset] << 16 | bytes[offset + 1] << 8 | bytes[offset + 2];

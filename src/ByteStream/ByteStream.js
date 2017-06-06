@@ -50,7 +50,7 @@ export default class ByteStream {
     read20() {
         const {offset, bytes} = this;
         this.updateOffset(3);
-        return (bytes[0] & 15) << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; //un mark the first 4 bits then read 24
+        return (bytes[offset] & 15) << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; //un mark the first 4 bits then read 24
     }
 
     read24() {

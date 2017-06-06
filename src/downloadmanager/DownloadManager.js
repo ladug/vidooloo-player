@@ -59,7 +59,6 @@ export default class DownloadManager extends EventEmitter {
     };
     _readHeader = (event) => {
         const {headerSize} = this.configurations;
-        this._updateReadOffset(headerSize);
         this.dispatchEvent(new ManagerReadyEvent(
             new PvfHeader(
                 new Uint8Array(event.payload.response)
