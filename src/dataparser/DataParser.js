@@ -29,13 +29,40 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             pvfChunkSize = size - svfChunkSize;
         return {
             factor,
-            size,
             duration,
             dataChunkSize,
             pvfChunkSize,
             svfChunkSize,
-            [SAMPLE_TYPE_FLAG]: flags[SAMPLE_TYPE_FLAG],
-            [SAMPLE_KEY_FLAG]: flags[SAMPLE_KEY_FLAG]
+            flags
+        }
+    },
+    containsCompleteSample = (pvfChunkSize, svfChunkSize, dataChunkSize, pvfRemaining, svfRemaining) => {
+        return (pvfChunkSize && svfChunkSize)
+            && (svfChunkSize + dataChunkSize) <= svfRemaining
+            && pvfChunkSize <= pvfRemaining;
+    },
+    extractSampleData = (pvfChunk, svfChunk, skipFactor) => {
+        const sampleSize = pvfChunk.length + svfChunk.length,
+            sampleData = new Uint8Array(sampleSize),
+            pvfChunkSize = skipFactor - 1;
+
+        svfChunk.forEach((svfByte, index) => {
+            const offset = index * skipFactor,
+                pvfOffset = index * pvfChunkSize;
+            sampleData[offset + pvfChunkSize] = svfByte;
+            sampleData.set(pvfChunk.slice(pvfOffset, pvfOffset + pvfChunkSize), offset);
+        });
+        return sampleData;
+    },
+    getSampleData = (pvfStream, svfStream) => {
+        const {pvfChunkSize, svfChunkSize, dataChunkSize, factor, ...rest} = getSampleHeaders(pvfStream, svfStream);
+        if (!containsCompleteSample(pvfChunkSize, svfChunkSize, dataChunkSize, pvfStream.remaining, svfStream.remaining)) {
+            return null;
+        }
+        return {
+            ...rest,
+            sampleData: extractSampleData(pvfStream.read(pvfChunkSize), svfStream.read(svfChunkSize), factor),
+            data: svfStream.read(dataChunkSize)
         }
     };
 
@@ -67,14 +94,17 @@ export default class DataParser extends EventEmitter {
     }
 
     readSamples() {
-        const {pvfStream, svfStream, samples} = this;
+        let sampleData;
+        const {pvfStream, svfStream, samples} = this, extractedSamples = [];
         if (!pvfStream.length || !pvfStream.remaining || !svfStream.length || !svfStream.remaining) {
             return;
         }
-        console.log(getSampleHeaders(pvfStream, svfStream));
 
-
+        const start = window.performance.now();
+        while (sampleData = getSampleData(pvfStream, svfStream)) {
+            extractedSamples.push(sampleData);
+        }
+        console.log(window.performance.now() - start);
+        console.log(extractedSamples);
     }
-
-
 }
