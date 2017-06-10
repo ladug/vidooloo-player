@@ -71,7 +71,6 @@ export default class DataParser extends EventEmitter {
     svfStream = new BufferByteStream();
     svfHeader = null;
     pvfHeader = null;
-    samples = [];
 
     get sampleCount() {
         return this.samples.length;
@@ -99,12 +98,9 @@ export default class DataParser extends EventEmitter {
         if (!pvfStream.length || !pvfStream.remaining || !svfStream.length || !svfStream.remaining) {
             return;
         }
-
-        const start = window.performance.now();
         while (sampleData = getSampleData(pvfStream, svfStream)) {
             extractedSamples.push(sampleData);
         }
-        console.log(window.performance.now() - start);
         console.log(extractedSamples);
     }
 }
