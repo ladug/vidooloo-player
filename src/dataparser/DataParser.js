@@ -55,10 +55,16 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
         return sampleData;
     },
     getSampleData = (pvfStream, svfStream) => {
+        pvfStream.snap();
+        svfStream.snap();
         const {pvfChunkSize, svfChunkSize, dataChunkSize, factor, ...rest} = getSampleHeaders(pvfStream, svfStream);
         if (!containsCompleteSample(pvfChunkSize, svfChunkSize, dataChunkSize, pvfStream.remaining, svfStream.remaining)) {
+            pvfStream.reset();
+            svfStream.reset();
             return null;
         }
+        pvfStream.commit();
+        svfStream.commit();
         return {
             ...rest,
             sampleData: extractSampleData(pvfStream.read(pvfChunkSize), svfStream.read(svfChunkSize), factor),
