@@ -8,6 +8,7 @@ module.exports = {
     },
     entry: {
         "stream": './workers/stream/worker.js',
+        "decoder": './workers/decoder/Decoder.orig.min.js',
         "app": './player.js'
     },
     output: {
@@ -18,6 +19,7 @@ module.exports = {
         rules: [
             {
                 test: /\.js$/,
+                exclude: [/\.min.js$/, /\.asm.js$/],
                 use: 'babel-loader',
             }
         ]

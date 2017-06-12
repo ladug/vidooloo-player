@@ -19,6 +19,7 @@ export default class WorkerLoader extends EventEmitter {
                 worker: worker
             }))
         } catch (e) {
+            debugger;
             this.dispatchEvent(
                 new WorkerError({
                     response: null,
@@ -43,10 +44,9 @@ export default class WorkerLoader extends EventEmitter {
                     status: http.status,
                     type: type
                 }));
-
-            http.response = http.onload = http.ontimeout = http.onerror = undefined; //unlink the http
+            http.onload = http.ontimeout = http.onerror = undefined; //unlink the http
         };
-        http.onload = http.ontimeout = http.onerror = ({type}) => {
+        http.ontimeout = http.onerror = ({type}) => {
             this.dispatchEvent(
                 new WorkerError({
                     response: null,

@@ -8,14 +8,14 @@ import SvfStreamManager from "./downloadmanager/SvfStreamManager";
 import DigestControl from "./controlers/DigestControl";
 import {HeadersEvent} from "./controlers/DigestControlEvents";
 import {} from "./controlers/DigestControlEvents";
-
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
 import {assert, sec} from "./common";
+import Decoder from "./Decoder/Decoder";
 
 const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/1494876554244.svf.digest";
-
+const DECODE_WORKER_SRC = "decoder.bundle.js";
 
 const getConfigurations = hostingTag => ({
     width: hostingTag.getAttribute('width') * 1 || 300,
@@ -29,6 +29,7 @@ export default class VidoolooPlayer {
     canvasPlayer = null;
     svfStream = null;
     digester = null;
+    decoder = null;
     readyState = {
         canvasPlayer: false,
         downloadManager: false
@@ -40,12 +41,19 @@ export default class VidoolooPlayer {
         sourceTag.parentNode.insertBefore(this.container, sourceTag);
         /* Read configurations from source DOMElement */
         this.configurations = getConfigurations(sourceTag);
-        this.init()
+        this.init();
     }
 
     init() {
         this.createPlayerComponent();
         this.createDownloadManager();
+        this.createDecoder();
+    }
+
+    createDecoder() {
+        const decoder = new Decoder({src: DECODE_WORKER_SRC});
+        decoder.init();
+        this.decoder = decoder;
     }
 
     createPlayerComponent() {
@@ -74,8 +82,8 @@ export default class VidoolooPlayer {
     _onDigestHeaders = (event) => {
         console.log("_onDigestHeaders", event)
     };
+
     onDownloadManagerReady = (event) => {
-        console.log(event);
         this.readyState.downloadManager = true;
         this.svfStream = new SvfStreamManager({
             type: event.payload.type,
