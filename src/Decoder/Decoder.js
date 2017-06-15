@@ -6,13 +6,21 @@ import WorkerLoader from '../workerloader/WorkerLoader'
 import {WorkerReady, WorkerError} from '../workerloader/WorkerLoaderEvents'
 
 export default class Decoder extends EventEmitter {
+    decodeQue = [];
     worker = null;
     decoder = null;
+    isWorkerReady = false;
+    isDecoderReady = false;
     configurations = {
         src: null,
         useWorker: true,
         useDocker: true
     };
+
+    get isReady() {
+        const {worker, isWorkerReady, decoder, isDecoderReady} = this;
+        return (worker && isWorkerReady) || (decoder && isDecoderReady)
+    }
 
     constructor(configurations = {}) {
         super();
@@ -30,7 +38,18 @@ export default class Decoder extends EventEmitter {
             workerLoader.addEventListener(WorkerError, this._onWorkerError);
         }
         if (useDocker) {
+            //TODO: add inline decoder to improve performance
+        }
+    }
 
+    decode(sample) {
+        this.decodeQue.push(sample);
+        this._runDecode();
+    }
+
+    _runDecode() {
+        if (this.isReady) {
+            
         }
     }
 
