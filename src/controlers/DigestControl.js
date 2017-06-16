@@ -3,16 +3,23 @@
  */
 import EventEmitter from "../events/EventEmitter";
 import DataParser from "../dataparser/DataParser";
+import {sec} from "../common";
 import {ChunkDownloadedEvent} from "../downloadmanager/DownloadManagerEvents";
-import {HeadersReadyEvent} from "../dataparser/DataParserEvents";
-import {HeadersEvent} from "./DigestControlEvents";
+import {HeadersReadyEvent, ExtractedSamplesEvent} from "../dataparser/DataParserEvents";
+import {DigestControlReady} from "./DigestControlEvents";
 
 
 export default class DigestControl extends EventEmitter {
+    dataParser = new DataParser();
     pvfDownloadManager = null;
     svfDownloadManager = null;
-    configurations = {};
-    dataParser = new DataParser();
+    headers = {
+        pvf: null,
+        svf: null
+    };
+    configurations = {
+        preload: 5 * sec
+    };
 
     constructor(pvfDownloadManager, svfDownloadManager, configurations = {}) {
         super();
@@ -21,18 +28,29 @@ export default class DigestControl extends EventEmitter {
             ...configurations
         };
         this.dataParser.addEventListener(HeadersReadyEvent, this._onParserHeaders);
+        this.dataParser.addEventListener(ExtractedSamplesEvent, this._onSamplesUpdate);
         this.pvfDownloadManager = pvfDownloadManager;
         this.pvfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onPvfChunk);
         this.svfDownloadManager = svfDownloadManager;
         this.svfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onSvfChunk);
     }
 
+    digestSamples() {
+        this.dataParser.parse();
+    }
+
+    _onSamplesUpdate = (event) => {
+
+    };
+
     _onParserHeaders = (event) => {
-        this.dispatchEvent(new HeadersEvent({
+        this.headers = {
             pvf: event.pvfHeader,
             svf: event.svfHeader
-        }));
+        };
+        this.dispatchEvent(new DigestControlReady());
     };
+
     _onPvfChunk = (event) => {
         console.log("_onPvfChunk", event);
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));

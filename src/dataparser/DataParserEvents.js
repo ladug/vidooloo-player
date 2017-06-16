@@ -23,4 +23,20 @@ export class HeadersReadyEvent extends Event {
 }
 
 export class ExtractedSamplesEvent extends Event {
+    _videoSamplesDuration = 0;
+    _audioSamplesDuration = 0;
+
+    constructor(payload = {}) {
+        super();
+        this._videoSamplesDuration = payload.videoSamplesDuration || 0;
+        this._audioSamplesDuration = payload.audioSamplesDuration || 0;
+    }
+
+    get videoSamplesDuration() {
+        return this._videoSamplesDuration;
+    }
+
+    get audioSamplesDuration() {
+        return this._audioSamplesDuration;
+    }
 }

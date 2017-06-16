@@ -6,8 +6,7 @@ import DownloadManager from "./downloadmanager/DownloadManager";
 import PlayerControls from "./playercontrols/PlayerControls";
 import SvfStreamManager from "./downloadmanager/SvfStreamManager";
 import DigestControl from "./controlers/DigestControl";
-import {HeadersEvent} from "./controlers/DigestControlEvents";
-import {} from "./controlers/DigestControlEvents";
+import {DigestControlReady} from "./controlers/DigestControlEvents";
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
@@ -100,8 +99,8 @@ export default class VidoolooPlayer {
         this.updateReadyState("decoder", true);
     };
 
-    _onDigestHeaders = (event) => {
-        console.log("_onDigestHeaders", event);
+    _onDigestControlReady = (event) => {
+        console.log("_onDigestControlReady", event);
         this.updateReadyState("digester", true);
     };
 
@@ -122,7 +121,7 @@ export default class VidoolooPlayer {
                 preloadTime: 5 * sec
             }
         );
-        this.digester.addEventListener(HeadersEvent, this._onDigestHeaders);
+        this.digester.addEventListener(DigestControlReady, this._onDigestControlReady);
         this.digester.init();
     };
 }
