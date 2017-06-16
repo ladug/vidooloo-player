@@ -21,3 +21,6 @@ export class HeadersReadyEvent extends Event {
         return this._pvfHeader;
     }
 }
+
+export class ExtractedSamplesEvent extends Event {
+}

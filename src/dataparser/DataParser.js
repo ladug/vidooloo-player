@@ -4,13 +4,14 @@
 import EventEmitter from "../events/EventEmitter";
 import {PvfHeader} from "../readers/PvfReader";
 import {SvfHeader} from "../readers/SvfReader";
-import {HeadersReadyEvent} from "./DataParserEvents";
+import {HeadersReadyEvent, ExtractedSamplesEvent} from "./DataParserEvents";
 import BufferByteStream from "../ByteStream/BufferByteStream";
 
-const SAMPLE_TYPE_FLAG = 0;
-const SAMPLE_KEY_FLAG = 1;
-const SAMPLE_EXTRA_FLAG = 2;
-const SAMPLE_EXTRA_TWO_FLAG = 3;
+const SAMPLE_TYPE_FLAG = 0,
+    SAMPLE_KEY_FLAG = 1,
+    SAMPLE_EXTRA_FLAG = 2,
+    SAMPLE_EXTRA_TWO_FLAG = 3,
+    SAMPLE_TYPE_VIDEO = 1;
 
 const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / skipFactor,
     getPvfSampleHeader = (pvfStream) => ({
@@ -77,10 +78,41 @@ export default class DataParser extends EventEmitter {
     svfStream = new BufferByteStream();
     svfHeader = null;
     pvfHeader = null;
+    videoSamples = [];
+    videoSamplesDuration = 0;
+    audioSamples = [];
+    audioSamplesDuration = 0;
     headersReady = false;
+    sampleTimer = 0;
+    canRead = false;
 
-    get sampleCount() {
-        return this.samples.length;
+    parse = () => {
+        this.canRead = true;
+        this._readSamples();
+    };
+
+    get videoSamplesLength() {
+        return this.videoSamples.length;
+    }
+
+    get videoDuration() {
+        return this.videoSamplesDuration;
+    }
+
+    get audioSamplesLength() {
+        return this.audioSamples.length;
+    }
+
+    get audioDuration() {
+        return this.audioSamplesDuration;
+    }
+
+    getVideoSample() {
+        return this.videoSamplesLength ? this.videoSamples.shift() : null;
+    }
+
+    getAudioSample() {
+        return this.audioSamplesLength ? this.audioSamples.shift() : null;
     }
 
     _checkDispatchHeaders() {
@@ -97,7 +129,7 @@ export default class DataParser extends EventEmitter {
             this.svfHeader = new SvfHeader(this.svfStream);
         }
         this._checkDispatchHeaders();
-        this.readSamples();
+        this._readSamples();
     }
 
     addPvfChunk(chunk) {
@@ -106,18 +138,34 @@ export default class DataParser extends EventEmitter {
             this.pvfHeader = new PvfHeader(this.pvfStream);
         }
         this._checkDispatchHeaders();
-        this.readSamples();
+        this._readSamples();
     }
 
-    readSamples() {
-        let sampleData;
-        const {pvfStream, svfStream, samples} = this, extractedSamples = [];
-        if (!pvfStream.length || !pvfStream.remaining || !svfStream.length || !svfStream.remaining) {
-            return;
+    _readSamples() {
+        const {canRead, pvfStream, svfStream, _softReadSamples} = this;
+        if (canRead && pvfStream.length && pvfStream.remaining && svfStream.length && svfStream.remaining) {
+            _softReadSamples();
         }
-        while (sampleData = getSampleData(pvfStream, svfStream)) {
-            extractedSamples.push(sampleData);
+    }
+
+    _softReadSamples = () => {
+        window.clearTimeout(this.sampleTimer);
+        const {pvfStream, svfStream, videoSamples, audioSamples, _softReadSamples} = this,
+            sampleData = getSampleData(pvfStream, svfStream);
+        if (sampleData) {
+            if (sampleData.flags[SAMPLE_TYPE_FLAG] === SAMPLE_TYPE_VIDEO) {
+                this.videoSamplesDuration += sampleData.duration;
+                videoSamples.push(sampleData);
+            } else {
+                this.audioSamplesDuration += sampleData.duration;
+                audioSamples.push(sampleData);
+            }
+            this.sampleTimer = window.setTimeout(_softReadSamples, 0);
+        } else {
+            this.dispatchEvent(new ExtractedSamplesEvent({
+                videoSamplesDuration: this.videoSamplesDuration,
+                audioSamplesDuration: this.audioSamplesDuration
+            }));
         }
-        console.log(extractedSamples);
     }
 }

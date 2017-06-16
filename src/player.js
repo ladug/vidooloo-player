@@ -31,6 +31,7 @@ export default class VidoolooPlayer {
     svfStream = null;
     digester = null;
     decoder = null;
+
     _readyState = {
         canvasPlayer: false,
         downloadManager: false,
@@ -40,9 +41,7 @@ export default class VidoolooPlayer {
 
     constructor(sourceTag) {
         assert(sourceTag, "No target DOMElement!");
-        /* create container tag and place it above the target tag */
         sourceTag.parentNode.insertBefore(this.container, sourceTag);
-        /* Read configurations from source DOMElement */
         this.configurations = getConfigurations(sourceTag);
         this.init();
     }
@@ -51,6 +50,10 @@ export default class VidoolooPlayer {
         this.createPlayerComponent();
         this.createDownloadManager();
         this.createDecoder();
+    }
+
+    onPlayerReady() {
+
     }
 
     createDecoder() {
@@ -88,9 +91,7 @@ export default class VidoolooPlayer {
         this._readyState[item] = value;
         const {canvasPlayer, downloadManager, digester, decoder} = this._readyState;
         if (canvasPlayer && downloadManager && digester && decoder) {
-            console.log("I am READY!")
-        } else {
-            console.log(this._readyState)
+            this.onPlayerReady();
         }
     }
 
