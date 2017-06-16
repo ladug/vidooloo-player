@@ -81,7 +81,7 @@ export default class Decoder extends EventEmitter {
             }
         });
     };
-    
+
     _onWorkerMessage = ({data}) => {
         if (data.consoleLog) {
             console.log(data.consoleLog);
@@ -98,6 +98,6 @@ export default class Decoder extends EventEmitter {
     };
 
     _onWorkerError = (e) => {
-        console.log("_onWorkerError", e);
+        console.error("_onWorkerError", e);
     };
 }
