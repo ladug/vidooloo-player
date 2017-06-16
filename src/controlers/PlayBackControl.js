@@ -23,18 +23,17 @@ export default class PlayBackControl extends EventEmitter {
         this._connectEvents();
     }
 
-    _connectEvents() {
+    _connectEvents = () => {
         this.decoder.addEventListener(PictureDecodedEvent, this._onPictureReady)
-    }
+    };
 
-    _onPictureReady(event) {
-        console.log("_onPictureReady", event, this.decoder);
-    }
+    _onPictureReady = (event) => {
+        console.error("_onPictureReady", event, this.decoder);
+    };
 
     _decodeSample = () => {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
-        console.warn(sample);
         if (sample) {
             decoder.decode(sample);
         }
@@ -42,8 +41,7 @@ export default class PlayBackControl extends EventEmitter {
 
     _initDecoder = ({svf}) => {
         const {decoder} = this;
-        decoder.decode(svf.sps);
-        decoder.decode(svf.pps);
+        decoder.configure(svf.sps, svf.pps);
     };
 
     start() {

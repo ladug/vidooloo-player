@@ -37,16 +37,21 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             flags
         }
     },
+    splitIntoChunks = (typedArray, chunkSize) => {
+        const res = [];
+        for (let i = 0; i < typedArray.length; i += chunkSize) {
+            res.push(typedArray.slice(i, i + chunkSize + 1));
+        }
+        return res;
+    },
     extractSampleData = (pvfChunk, svfChunk, skipFactor) => {
         const sampleSize = pvfChunk.length + svfChunk.length,
-            sampleData = new Uint8Array(sampleSize),
-            pvfChunkSize = skipFactor - 1;
-
-        svfChunk.forEach((svfByte, index) => {
-            const offset = index * skipFactor,
-                pvfOffset = index * pvfChunkSize;
-            sampleData[offset + pvfChunkSize] = svfByte;
-            sampleData.set(pvfChunk.slice(pvfOffset, pvfOffset + pvfChunkSize), offset);
+            sampleData = new Uint8Array(sampleSize);
+        splitIntoChunks(pvfChunk, skipFactor - 1).forEach((slice, index) => {
+            sampleData.set(slice, index * skipFactor);
+        });
+        svfChunk.forEach((byte, index) => {
+            sampleData[(index + 1) * skipFactor] = byte;
         });
         return sampleData;
     },

@@ -27,8 +27,8 @@ export default class WorkerContainer {
         this.worker.addEventListener(type, handler);
     }
 
-    postMessage(data) {
+    postMessage(data, moreData) {
         console.warn("Bad implementation [postMessage]!");
-        this.worker.postMessage(data);
+        this.worker.postMessage(data, moreData);
     }
 }

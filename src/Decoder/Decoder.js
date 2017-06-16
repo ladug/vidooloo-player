@@ -4,7 +4,18 @@
 import EventEmitter from '../events/EventEmitter';
 import WorkerLoader from '../workerloader/WorkerLoader'
 import {WorkerReady, WorkerError} from '../workerloader/WorkerLoaderEvents'
+import ByteStream from '../ByteStream/ByteStream';
 import {PictureDecodedEvent, DecoderReadyEvent} from './DecoderEvents';
+import {assert} from '../common';
+
+const getNalUnits = (sampleData) => {
+    const sampleStream = new ByteStream(sampleData),
+        units = [];
+    while (sampleStream.hasData) {
+        units.push(sampleStream.read(sampleStream.read32()))
+    }
+    return units;
+};
 
 export default class Decoder extends EventEmitter {
     sampleQue = [];
@@ -65,21 +76,31 @@ export default class Decoder extends EventEmitter {
 
 
     decode(sample) {
-        this.sampleQue.push(sample);
+        const sampleUnits = getNalUnits(sample.sampleData);
+        sampleUnits.forEach(unit => {
+            this.sampleQue.push(unit);
+        });
         this._runDecoderQue();
     }
 
-    _decodeSample(sample) {
-        const {isWorkerBusy, isDecoderBusy , worker} = this;
-        let data;
-        if (sample.byteLength) {
-            data = sample;
-        } else {
-            data = sample.sampleData;
-        }
+    configure(sps, pps) {
+        const {worker} = this;
+        worker.worker.postMessage({buf: sps.buffer, offset: 0, length: sps.length}, [sps.buffer]);
+        worker.worker.postMessage({buf: pps.buffer, offset: 0, length: pps.length}, [pps.buffer]);
+    }
 
+    _decodeSample(data) {
+        const {isWorkerBusy, isDecoderBusy, worker} = this;
         if (!isWorkerBusy) {
-            return ;
+            return worker.worker.postMessage(
+                {
+                    buf: data.buffer,
+                    offset: 0,
+                    length: data.length,
+                    info: undefined
+                },
+                [data.buffer]
+            );
         }
 
         if (!isDecoderBusy) {
@@ -92,6 +113,7 @@ export default class Decoder extends EventEmitter {
         window.clearTimeout(this.decodingTimeout);
         this.decodingTimeout = window.setTimeout(this._runDecode, 0);
     };
+
     _runDecode = () => {
         const {isReady, isBusy, sampleQue} = this;
         if (isReady && !isBusy && sampleQue.length) {
@@ -106,35 +128,39 @@ export default class Decoder extends EventEmitter {
 
     _initWorker = () => {
         const {isReady, worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
-        console.log("<><><>",worker);
-        worker.addEventListener('message', _onWorkerMessage);
-        worker.postMessage({
+        worker.worker.addEventListener('message', _onWorkerMessage);
+        worker.worker.postMessage({
             type: "Broadway.js - Worker init", options: {
-                rgb: useWebgl,
+                rgb: !useWebgl,
                 reuseMemory: reuseMemory
             }
         });
-        if (!isReady) {
-            this.dispatchEvent(new DecoderReadyEvent());
-        }
-        this.isWorkerReady = true;
     };
 
     _onWorkerMessage = ({data}) => {
+        console.error("_onWorkerMessage", data);
+
         if (data.consoleLog) {
-            console.log(data.consoleLog);
-            return;
+            if (data.consoleLog === "broadway worker initialized") {
+                this.dispatchEvent(new DecoderReadyEvent());
+                this.isWorkerReady = true;
+            } else {
+                console.warn(data.consoleLog);
+                this._isWorkerBusy = false;
+                this._runDecoderQue();
+            }
+        } else {
+            window.setTimeout(() => {
+                this.dispatchEvent(new PictureDecodedEvent({
+                    data: new Uint8Array(data.buf),
+                    width: data.width,
+                    height: data.height,
+                    info: data.infos
+                }));
+                this._isWorkerBusy = false;
+                this._runDecoderQue();
+            }, 0)
         }
-        window.setTimeout(() => {
-            this.dispatchEvent(new PictureDecodedEvent({
-                data: new Uint8Array(data.buf),
-                width: data.width,
-                height: data.height,
-                info: data.infos
-            }));
-            this._isWorkerBusy = false;
-            this._runDecoderQue();
-        }, 0)
     };
 
     _onWorkerError = (e) => {
