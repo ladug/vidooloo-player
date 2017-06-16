@@ -4,7 +4,7 @@
 import EventEmitter from "../events/EventEmitter";
 import {PvfHeader} from "../readers/PvfReader";
 import {SvfHeader} from "../readers/SvfReader";
-import {} from "./DataParserEvents";
+import {HeadersReadyEvent} from "./DataParserEvents";
 import BufferByteStream from "../ByteStream/BufferByteStream";
 
 const SAMPLE_TYPE_FLAG = 0;
@@ -77,9 +77,18 @@ export default class DataParser extends EventEmitter {
     svfStream = new BufferByteStream();
     svfHeader = null;
     pvfHeader = null;
+    headersReady = false;
 
     get sampleCount() {
         return this.samples.length;
+    }
+
+    _checkDispatchHeaders() {
+        const {headersReady, svfHeader, pvfHeader} = this;
+        if (!headersReady && svfHeader && pvfHeader) {
+            this.dispatchEvent(new HeadersReadyEvent(pvfHeader, svfHeader));
+            this.headersReady = true;
+        }
     }
 
     addSvfChunk(chunk) {
@@ -87,6 +96,7 @@ export default class DataParser extends EventEmitter {
         if (!this.svfHeader) {
             this.svfHeader = new SvfHeader(this.svfStream);
         }
+        this._checkDispatchHeaders();
         this.readSamples();
     }
 
@@ -95,6 +105,7 @@ export default class DataParser extends EventEmitter {
         if (!this.pvfHeader) {
             this.pvfHeader = new PvfHeader(this.pvfStream);
         }
+        this._checkDispatchHeaders();
         this.readSamples();
     }
 

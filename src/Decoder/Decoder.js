@@ -4,7 +4,7 @@
 import EventEmitter from '../events/EventEmitter';
 import WorkerLoader from '../workerloader/WorkerLoader'
 import {WorkerReady, WorkerError} from '../workerloader/WorkerLoaderEvents'
-import {PictureDecodedEvent} from './DecoderEvents';
+import {PictureDecodedEvent, DecoderReadyEvent} from './DecoderEvents';
 
 export default class Decoder extends EventEmitter {
     sampleQue = [];
@@ -54,7 +54,6 @@ export default class Decoder extends EventEmitter {
     }
 
 
-
     decode(sample) {
         this.sampleQue.push(sample);
         this._runDecoderQue();
@@ -70,6 +69,7 @@ export default class Decoder extends EventEmitter {
          }, [parData.buffer]);*/
 
     }
+
     _runDecoderQue = () => {
         window.clearTimeout(this.decodingTimeout);
         this.decodingTimeout = window.setTimeout(this._runDecode, 0);
@@ -87,7 +87,7 @@ export default class Decoder extends EventEmitter {
     };
 
     _initWorker = () => {
-        const {worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
+        const {isReady, worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
         worker.addEventListener('message', _onWorkerMessage);
         worker.postMessage({
             type: "Broadway.js - Worker init", options: {
@@ -95,7 +95,10 @@ export default class Decoder extends EventEmitter {
                 reuseMemory: reuseMemory
             }
         });
-        this.isDecoderReady = true;
+        if (!isReady) {
+            this.dispatchEvent(new DecoderReadyEvent());
+        }
+        this.isWorkerReady = true;
     };
 
     _onWorkerMessage = ({data}) => {

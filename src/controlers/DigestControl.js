@@ -4,7 +4,7 @@
 import EventEmitter from "../events/EventEmitter";
 import DataParser from "../dataparser/DataParser";
 import {ChunkDownloadedEvent} from "../downloadmanager/DownloadManagerEvents";
-import {} from "../dataparser/DataParserEvents";
+import {HeadersReadyEvent} from "../dataparser/DataParserEvents";
 import {HeadersEvent} from "./DigestControlEvents";
 import {assert} from "../common";
 
@@ -21,12 +21,19 @@ export default class DigestControl extends EventEmitter {
             ...this.configurations,
             ...configurations
         };
+        this.dataParser.addEventListener(HeadersReadyEvent, this._onParserHeaders)
         this.pvfDownloadManager = pvfDownloadManager;
         this.pvfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onPvfChunk);
         this.svfDownloadManager = svfDownloadManager;
         this.svfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onSvfChunk);
     }
 
+    _onParserHeaders = (event) => {
+        this.dispatchEvent(new HeadersEvent({
+            pvf: event.pvfHeader,
+            svf: event.svfHeader
+        }));
+    };
     _onPvfChunk = (event) => {
         console.log("_onPvfChunk", event);
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));
