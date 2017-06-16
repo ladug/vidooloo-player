@@ -114,6 +114,7 @@ export default class DownloadManager extends EventEmitter {
             readStart: readOffset,
             readEnd: readOffset + readSize
         });
+        this._updateReadOffset(readSize);
         this._checkChunkQueue();
     }
 
