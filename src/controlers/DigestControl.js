@@ -6,7 +6,6 @@ import DataParser from "../dataparser/DataParser";
 import {ChunkDownloadedEvent} from "../downloadmanager/DownloadManagerEvents";
 import {HeadersReadyEvent} from "../dataparser/DataParserEvents";
 import {HeadersEvent} from "./DigestControlEvents";
-import {assert} from "../common";
 
 
 export default class DigestControl extends EventEmitter {
@@ -21,7 +20,7 @@ export default class DigestControl extends EventEmitter {
             ...this.configurations,
             ...configurations
         };
-        this.dataParser.addEventListener(HeadersReadyEvent, this._onParserHeaders)
+        this.dataParser.addEventListener(HeadersReadyEvent, this._onParserHeaders);
         this.pvfDownloadManager = pvfDownloadManager;
         this.pvfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onPvfChunk);
         this.svfDownloadManager = svfDownloadManager;

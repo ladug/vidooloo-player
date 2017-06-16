@@ -106,7 +106,7 @@ export default class DownloadManager extends EventEmitter {
         this._checkChunkQueue();
     };
 
-    readChunks(num) {
+    readChunks() {
         const {readOffset, readSize, src} = this.configurations;
         this.queue.push({
             src: src,
