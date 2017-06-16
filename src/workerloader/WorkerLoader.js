@@ -13,21 +13,20 @@ export default class WorkerLoader extends EventEmitter {
     }
 
     onWorkerLoaded = (event) => {
+        let responseEvent = null;
         try {
             const worker = new Worker(URL.createObjectURL(event.response));
-            this.dispatchEvent(new WorkerReady({
+            responseEvent = new WorkerReady({
                 worker: worker
-            }))
+            })
         } catch (e) {
-            debugger;
-            this.dispatchEvent(
-                new WorkerError({
-                    response: null,
-                    status: http.status,
-                    type: type
-                })
-            )
+            responseEvent = new WorkerError({
+                response: null,
+                status: http.status,
+                type: type
+            })
         }
+        this.dispatchEvent(responseEvent);
         this.destroyEvents(); //Component work is done, unlink all events
     };
 

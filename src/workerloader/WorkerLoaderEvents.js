@@ -64,6 +64,7 @@ export class WorkerReady extends Event {
 
     constructor(payload = {}) {
         super();
+        this._worker = payload.worker || null;
     }
 
     get worker() {

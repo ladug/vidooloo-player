@@ -4,15 +4,19 @@
 import EventEmitter from '../events/EventEmitter';
 import WorkerLoader from '../workerloader/WorkerLoader'
 import {WorkerReady, WorkerError} from '../workerloader/WorkerLoaderEvents'
+import {PictureDecodedEvent} from './DecoderEvents';
 
 export default class Decoder extends EventEmitter {
-    decodeQue = [];
+    sampleQue = [];
     worker = null;
     decoder = null;
     isWorkerReady = false;
     isDecoderReady = false;
+    decodingTimeout = 0;
     configurations = {
         src: null,
+        useWebgl: true,
+        reuseMemory: true,
         useWorker: true,
         useDocker: true
     };
@@ -42,20 +46,57 @@ export default class Decoder extends EventEmitter {
         }
     }
 
+    _runDecoderQue = () => {
+        window.clearTimeout(this.decodingTimeout);
+        this.decodingTimeout = window.setTimeout(this._runDecode, 0);
+    };
+
     decode(sample) {
-        this.decodeQue.push(sample);
-        this._runDecode();
+        this.sampleQue.push(sample);
+        this._runDecoderQue();
     }
 
-    _runDecode() {
-        if (this.isReady) {
-            
+    _runDecode = () => {
+        const {isReady, sampleQue, _runDecoderQue} = this;
+        if (isReady && sampleQue.length) {
+            const sample = sampleQue.shift();
+
+
+            _runDecoderQue();
         }
-    }
+    };
 
     _onWorkerReady = (e) => {
-        console.log("_onWorkerReady", e);
+        this.worker = e.worker;
+        this._initWorker();
     };
+
+    _initWorker = () => {
+        const {worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
+        worker.addEventListener('message', _onWorkerMessage);
+        worker.postMessage({
+            type: "Broadway.js - Worker init", options: {
+                rgb: useWebgl,
+                reuseMemory: reuseMemory
+            }
+        });
+    };
+    
+    _onWorkerMessage = ({data}) => {
+        if (data.consoleLog) {
+            console.log(data.consoleLog);
+            return;
+        }
+        window.setTimeout(() => {
+            this.dispatchEvent(new PictureDecodedEvent({
+                data: new Uint8Array(data.buf),
+                width: data.width,
+                height: data.height,
+                info: data.infos
+            }));
+        }, 0)
+    };
+
     _onWorkerError = (e) => {
         console.log("_onWorkerError", e);
     };
