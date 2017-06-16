@@ -11,7 +11,9 @@ export default class Decoder extends EventEmitter {
     worker = null;
     decoder = null;
     isWorkerReady = false;
+    isWorkerBusy = false;
     isDecoderReady = false;
+    isDecoderBusy = false;
     decodingTimeout = 0;
     configurations = {
         src: null,
@@ -20,6 +22,11 @@ export default class Decoder extends EventEmitter {
         useWorker: true,
         useDocker: true
     };
+
+    get isBusy() {
+        const {isWorkerBusy, isWorkerReady, isDecoderBusy} = this;
+        return ( isWorkerReady && !isWorkerBusy) || (isDecoderReady && !isDecoderBusy);
+    }
 
     get isReady() {
         const {worker, isWorkerReady, decoder, isDecoderReady} = this;
@@ -46,23 +53,31 @@ export default class Decoder extends EventEmitter {
         }
     }
 
-    _runDecoderQue = () => {
-        window.clearTimeout(this.decodingTimeout);
-        this.decodingTimeout = window.setTimeout(this._runDecode, 0);
-    };
+
 
     decode(sample) {
         this.sampleQue.push(sample);
         this._runDecoderQue();
     }
 
+    _decodeSample(sample) {
+        console.log(sample)
+        /*worker.postMessage({
+         buf: parData.buffer,
+         offset: parData.byteOffset,
+         length: parData.length,
+         info: parInfo
+         }, [parData.buffer]);*/
+
+    }
+    _runDecoderQue = () => {
+        window.clearTimeout(this.decodingTimeout);
+        this.decodingTimeout = window.setTimeout(this._runDecode, 0);
+    };
     _runDecode = () => {
-        const {isReady, sampleQue, _runDecoderQue} = this;
-        if (isReady && sampleQue.length) {
-            const sample = sampleQue.shift();
-
-
-            _runDecoderQue();
+        const {isReady, isBusy, sampleQue} = this;
+        if (isReady && !isBusy && sampleQue.length) {
+            this._decodeSample(sampleQue.shift());
         }
     };
 
@@ -80,6 +95,7 @@ export default class Decoder extends EventEmitter {
                 reuseMemory: reuseMemory
             }
         });
+        this.isDecoderReady = true;
     };
 
     _onWorkerMessage = ({data}) => {
@@ -94,6 +110,8 @@ export default class Decoder extends EventEmitter {
                 height: data.height,
                 info: data.infos
             }));
+            this.isWorkerBusy = false;
+            this._runDecoderQue();
         }, 0)
     };
 
