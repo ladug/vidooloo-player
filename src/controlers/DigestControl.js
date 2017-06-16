@@ -13,6 +13,8 @@ export default class DigestControl extends EventEmitter {
     dataParser = new DataParser();
     pvfDownloadManager = null;
     svfDownloadManager = null;
+    videoPreloadDuration = 0;
+    audioPreloadDuration = 0;
     headers = {
         pvf: null,
         svf: null
@@ -35,12 +37,20 @@ export default class DigestControl extends EventEmitter {
         this.svfDownloadManager.addEventListener(ChunkDownloadedEvent, this._onSvfChunk);
     }
 
+    shiftVideoSample() {
+        return this.dataParser.getVideoSample();
+    }
+
+    shiftAudioSample() {
+        return this.dataParser.getAudioSample();
+    }
+
     digestSamples() {
         this.dataParser.parse();
     }
 
     _onSamplesUpdate = (event) => {
-
+        console.log("_onSamplesUpdate", event);
     };
 
     _onParserHeaders = (event) => {

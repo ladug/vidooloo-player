@@ -6,6 +6,7 @@ import DownloadManager from "./downloadmanager/DownloadManager";
 import PlayerControls from "./playercontrols/PlayerControls";
 import SvfStreamManager from "./downloadmanager/SvfStreamManager";
 import DigestControl from "./controlers/DigestControl";
+import PlayBackControl from "./controlers/PlayBackControl";
 import {DigestControlReady} from "./controlers/DigestControlEvents";
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
@@ -30,10 +31,9 @@ export default class VidoolooPlayer {
     svfStream = null;
     digester = null;
     decoder = null;
-
+    playback = null;
     _readyState = {
         canvasPlayer: false,
-        downloadManager: false,
         digester: false,
         decoder: false
     };
@@ -52,7 +52,9 @@ export default class VidoolooPlayer {
     }
 
     onPlayerReady() {
-
+        const {canvasPlayer, digester, decoder} = this;
+        this.playback = new PlayBackControl(canvasPlayer, digester, decoder);
+        this.playback.start();
     }
 
     createDecoder() {
@@ -72,9 +74,7 @@ export default class VidoolooPlayer {
 
     createDownloadManager() {
         const {src} = this.configurations;
-        this.downloadManager = new DownloadManager({
-            src
-        });
+        this.downloadManager = new DownloadManager({src});
         this.downloadManager.addEventListener(ManagerReadyEvent, this._onDownloadManagerReady);
         this.downloadManager.init();
     }
@@ -88,8 +88,8 @@ export default class VidoolooPlayer {
 
     updateReadyState(item, value) {
         this._readyState[item] = value;
-        const {canvasPlayer, downloadManager, digester, decoder} = this._readyState;
-        if (canvasPlayer && downloadManager && digester && decoder) {
+        const {canvasPlayer, digester, decoder} = this._readyState;
+        if (canvasPlayer && digester && decoder) {
             this.onPlayerReady();
         }
     }
@@ -106,8 +106,6 @@ export default class VidoolooPlayer {
 
     _onDownloadManagerReady = (event) => {
         console.log("_onDownloadManagerReady", event);
-        this.updateReadyState("downloadManager", true);
-
         this.svfStream = new SvfStreamManager({
             type: event.payload.type,
             version: event.payload.version,

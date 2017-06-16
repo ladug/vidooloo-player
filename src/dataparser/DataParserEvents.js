@@ -18,7 +18,7 @@ export class HeadersReadyEvent extends Event {
     }
 
     get svfHeader() {
-        return this._pvfHeader;
+        return this._svfHeader;
     }
 }
 

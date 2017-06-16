@@ -90,6 +90,14 @@ export class SvfHeader {
         this._audioConfigurations = readAudioConfig(bufferStream, _version, _subVersion);
     }
 
+    get pps() {
+        return this._videoConfigurations.pps;
+    }
+
+    get sps() {
+        return this._videoConfigurations.sps;
+    }
+
     get length() {
         return this._size;
     }
