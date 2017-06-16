@@ -37,11 +37,6 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             flags
         }
     },
-    containsCompleteSample = (pvfChunkSize, svfChunkSize, dataChunkSize, pvfRemaining, svfRemaining) => {
-        return (pvfChunkSize && svfChunkSize)
-            && (svfChunkSize + dataChunkSize) <= svfRemaining
-            && pvfChunkSize <= pvfRemaining;
-    },
     extractSampleData = (pvfChunk, svfChunk, skipFactor) => {
         const sampleSize = pvfChunk.length + svfChunk.length,
             sampleData = new Uint8Array(sampleSize),
@@ -55,18 +50,32 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
         });
         return sampleData;
     },
+    containsCompletePvfSample = (pvfChunkSize, pvfRemaining) => {
+        return pvfChunkSize && (pvfChunkSize <= pvfRemaining);
+    },
+    containsCompleteSvfSample = (svfChunkSize, svfRemaining, dataChunkSize) => {
+        return svfChunkSize && ((svfChunkSize + dataChunkSize) <= svfRemaining);
+    },
     getSampleData = (pvfStream, svfStream) => {
         pvfStream.snap();
         svfStream.snap();
-        const {pvfChunkSize, svfChunkSize, dataChunkSize, factor, ...rest} = getSampleHeaders(pvfStream, svfStream);
-        if (!containsCompleteSample(pvfChunkSize, svfChunkSize, dataChunkSize, pvfStream.remaining, svfStream.remaining)) {
+        const {pvfChunkSize, svfChunkSize, dataChunkSize, factor, ...rest} = getSampleHeaders(pvfStream, svfStream),
+            isPvfComplete = containsCompletePvfSample(pvfChunkSize, pvfStream.remaining),
+            isSvfComplete = containsCompleteSvfSample(svfChunkSize, svfStream.remaining, dataChunkSize);
+
+        if (!isPvfComplete || !isSvfComplete) {
             pvfStream.reset();
             svfStream.reset();
-            return null;
+            return {
+                partial: true,
+                isPvfComplete,
+                isSvfComplete
+            };
         }
         pvfStream.commit();
         svfStream.commit();
         return {
+            partial: false,
             ...rest,
             sampleData: extractSampleData(pvfStream.read(pvfChunkSize), svfStream.read(svfChunkSize), factor),
             data: svfStream.read(dataChunkSize)
@@ -152,7 +161,7 @@ export default class DataParser extends EventEmitter {
         window.clearTimeout(this.sampleTimer);
         const {pvfStream, svfStream, videoSamples, audioSamples, _softReadSamples} = this,
             sampleData = getSampleData(pvfStream, svfStream);
-        if (sampleData) {
+        if (!sampleData.partial) {
             if (sampleData.flags[SAMPLE_TYPE_FLAG] === SAMPLE_TYPE_VIDEO) {
                 this.videoSamplesDuration += sampleData.duration;
                 videoSamples.push(sampleData);
@@ -164,7 +173,9 @@ export default class DataParser extends EventEmitter {
         } else {
             this.dispatchEvent(new ExtractedSamplesEvent({
                 videoSamplesDuration: this.videoSamplesDuration,
-                audioSamplesDuration: this.audioSamplesDuration
+                audioSamplesDuration: this.audioSamplesDuration,
+                partialPvf: !sampleData.isPvfComplete,
+                partialSvf: !sampleData.isSvfComplete
             }));
         }
     }

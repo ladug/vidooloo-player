@@ -25,11 +25,15 @@ export class HeadersReadyEvent extends Event {
 export class ExtractedSamplesEvent extends Event {
     _videoSamplesDuration = 0;
     _audioSamplesDuration = 0;
+    _partialPvf = false;
+    _partialSvf = false;
 
     constructor(payload = {}) {
         super();
         this._videoSamplesDuration = payload.videoSamplesDuration || 0;
         this._audioSamplesDuration = payload.audioSamplesDuration || 0;
+        this._partialPvf = !!payload.partialPvf;
+        this._partialSvf = !!payload.partialSvf;
     }
 
     get videoSamplesDuration() {
