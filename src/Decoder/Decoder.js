@@ -85,14 +85,14 @@ export default class Decoder extends EventEmitter {
 
     configure(sps, pps) {
         const {worker} = this;
-        worker.worker.postMessage({buf: sps.buffer, offset: 0, length: sps.length}, [sps.buffer]);
-        worker.worker.postMessage({buf: pps.buffer, offset: 0, length: pps.length}, [pps.buffer]);
+        worker.postMessage({buf: sps.buffer, offset: 0, length: sps.length}, [sps.buffer]);
+        worker.postMessage({buf: pps.buffer, offset: 0, length: pps.length}, [pps.buffer]);
     }
 
     _decodeSample(data) {
         const {isWorkerBusy, isDecoderBusy, worker} = this;
         if (!isWorkerBusy) {
-            return worker.worker.postMessage(
+            return worker.postMessage(
                 {
                     buf: data.buffer,
                     offset: 0,
@@ -128,8 +128,8 @@ export default class Decoder extends EventEmitter {
 
     _initWorker = () => {
         const {isReady, worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
-        worker.worker.addEventListener('message', _onWorkerMessage);
-        worker.worker.postMessage({
+        worker.addEventListener('message', _onWorkerMessage);
+        worker.postMessage({
             type: "Broadway.js - Worker init", options: {
                 rgb: !useWebgl,
                 reuseMemory: reuseMemory
