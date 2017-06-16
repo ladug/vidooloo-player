@@ -21,4 +21,14 @@ export default class WorkerContainer {
             payload: payload
         });
     }
+
+    addEventListener(type, handler) {
+        console.warn("Bad implementation [addEventListener]!");
+        this.worker.addEventListener(type, handler);
+    }
+
+    postMessage(data) {
+        console.warn("Bad implementation [postMessage]!");
+        this.worker.postMessage(data);
+    }
 }

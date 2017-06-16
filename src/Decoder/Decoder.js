@@ -11,9 +11,9 @@ export default class Decoder extends EventEmitter {
     worker = null;
     decoder = null;
     isWorkerReady = false;
-    isWorkerBusy = false;
+    _isWorkerBusy = false;
     isDecoderReady = false;
-    isDecoderBusy = false;
+    _isDecoderBusy = false;
     decodingTimeout = 0;
     configurations = {
         src: null,
@@ -24,8 +24,18 @@ export default class Decoder extends EventEmitter {
     };
 
     get isBusy() {
-        const {isWorkerBusy, isWorkerReady, isDecoderBusy} = this;
-        return ( isWorkerReady && !isWorkerBusy) || (isDecoderReady && !isDecoderBusy);
+        const {isDecoderBusy, isWorkerBusy} = this;
+        return isDecoderBusy && isWorkerBusy;
+    }
+
+    get isDecoderBusy() {
+        const {isDecoderReady, _isDecoderBusy} = this;
+        return !isDecoderReady || _isDecoderBusy;
+    }
+
+    get isWorkerBusy() {
+        const {isWorkerReady, _isWorkerBusy} = this;
+        return !isWorkerReady || _isWorkerBusy;
     }
 
     get isReady() {
@@ -60,14 +70,22 @@ export default class Decoder extends EventEmitter {
     }
 
     _decodeSample(sample) {
-        console.log(sample)
-        /*worker.postMessage({
-         buf: parData.buffer,
-         offset: parData.byteOffset,
-         length: parData.length,
-         info: parInfo
-         }, [parData.buffer]);*/
+        const {isWorkerBusy, isDecoderBusy , worker} = this;
+        let data;
+        if (sample.byteLength) {
+            data = sample;
+        } else {
+            data = sample.sampleData;
+        }
 
+        if (!isWorkerBusy) {
+            return ;
+        }
+
+        if (!isDecoderBusy) {
+            return;
+        }
+        throw new Error("Sample was dropped!");
     }
 
     _runDecoderQue = () => {
@@ -88,6 +106,7 @@ export default class Decoder extends EventEmitter {
 
     _initWorker = () => {
         const {isReady, worker, _onWorkerMessage} = this, {useWebgl, reuseMemory} = this.configurations;
+        console.log("<><><>",worker);
         worker.addEventListener('message', _onWorkerMessage);
         worker.postMessage({
             type: "Broadway.js - Worker init", options: {
@@ -113,7 +132,7 @@ export default class Decoder extends EventEmitter {
                 height: data.height,
                 info: data.infos
             }));
-            this.isWorkerBusy = false;
+            this._isWorkerBusy = false;
             this._runDecoderQue();
         }, 0)
     };

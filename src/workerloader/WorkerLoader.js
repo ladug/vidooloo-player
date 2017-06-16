@@ -3,6 +3,7 @@
  */
 import EventEmitter from "../events/EventEmitter";
 import {WorkerError, WorkerLoaded, WorkerReady} from "./WorkerLoaderEvents";
+import WorkerContainer from "../workers/workercontainer/WorkerContainer";
 
 
 export default class WorkerLoader extends EventEmitter {
@@ -17,7 +18,7 @@ export default class WorkerLoader extends EventEmitter {
         try {
             const worker = new Worker(URL.createObjectURL(event.response));
             responseEvent = new WorkerReady({
-                worker: worker
+                worker: new WorkerContainer(worker)
             })
         } catch (e) {
             responseEvent = new WorkerError({
