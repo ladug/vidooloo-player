@@ -2,6 +2,9 @@
  * Created by vladi on 12-Jun-17.
  */
 import Event from '../events/Event';
+export class DecoderReadyEvent extends Event{
+
+}
 
 export class PictureDecodedEvent extends Event {
     _data = null;

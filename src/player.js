@@ -11,6 +11,7 @@ import {} from "./controlers/DigestControlEvents";
 import {PlayEvent, PauseEvent, StopEvent} from "./playercontrols/PlayerControlEvents";
 import {ManagerReadyEvent} from "./downloadmanager/DownloadManagerEvents";
 import {CanvasReady} from "./canvasplayer/CanvasEvents";
+import {DecoderReadyEvent} from "./Decoder/DecoderEvents";
 import {assert, sec} from "./common";
 import Decoder from "./Decoder/Decoder";
 
@@ -30,9 +31,11 @@ export default class VidoolooPlayer {
     svfStream = null;
     digester = null;
     decoder = null;
-    readyState = {
+    _readyState = {
         canvasPlayer: false,
-        downloadManager: false
+        downloadManager: false,
+        digester: false,
+        decoder: false
     };
 
     constructor(sourceTag) {
@@ -52,6 +55,7 @@ export default class VidoolooPlayer {
 
     createDecoder() {
         const decoder = new Decoder({src: DECODE_WORKER_SRC});
+        decoder.addEventListener(DecoderReadyEvent, this._onDecoderReady)
         decoder.init();
         this.decoder = decoder;
     }
@@ -60,7 +64,7 @@ export default class VidoolooPlayer {
         const {container, configurations: {width, height}} = this;
         container.style.cssText = ["width:", width, "px;height:", height, "px"].join('');
         this.canvasPlayer = new CanvasPlayer(container, width, height);
-        this.canvasPlayer.addEventListener(CanvasReady, this.onCanvasReady);
+        this.canvasPlayer.addEventListener(CanvasReady, this._onCanvasReady);
         this.canvasPlayer.init();
     }
 
@@ -69,22 +73,41 @@ export default class VidoolooPlayer {
         this.downloadManager = new DownloadManager({
             src
         });
-        this.downloadManager.addEventListener(ManagerReadyEvent, this.onDownloadManagerReady);
+        this.downloadManager.addEventListener(ManagerReadyEvent, this._onDownloadManagerReady);
         this.downloadManager.init();
     }
 
-    onCanvasReady = () => {
+    _onCanvasReady = (event) => {
+        console.log("_onCanvasReady", event);
+        this.updateReadyState("canvasPlayer", true);
         this.controls = new PlayerControls();
         this.controls.attachTo(this.container);
-        this.readyState.canvasPlayer = true;
+    };
+
+    updateReadyState(item, value) {
+        this._readyState[item] = value;
+        const {canvasPlayer, downloadManager, digester, decoder} = this._readyState;
+        if (canvasPlayer && downloadManager && digester && decoder) {
+            console.log("I am READY!")
+        } else {
+            console.log(this._readyState)
+        }
+    }
+
+    _onDecoderReady = (event) => {
+        console.log("_onDecoderReady", event);
+        this.updateReadyState("decoder", true);
     };
 
     _onDigestHeaders = (event) => {
-        console.log("_onDigestHeaders", event)
+        console.log("_onDigestHeaders", event);
+        this.updateReadyState("digester", true);
     };
 
-    onDownloadManagerReady = (event) => {
-        this.readyState.downloadManager = true;
+    _onDownloadManagerReady = (event) => {
+        console.log("_onDownloadManagerReady", event);
+        this.updateReadyState("downloadManager", true);
+
         this.svfStream = new SvfStreamManager({
             type: event.payload.type,
             version: event.payload.version,
