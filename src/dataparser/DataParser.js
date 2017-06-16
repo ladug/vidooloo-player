@@ -152,8 +152,19 @@ export default class DataParser extends EventEmitter {
 
     _readSamples() {
         const {canRead, pvfStream, svfStream, _softReadSamples} = this;
-        if (canRead && pvfStream.length && pvfStream.remaining && svfStream.length && svfStream.remaining) {
-            _softReadSamples();
+        if (canRead) {
+            const partialPvf = !pvfStream.length || !pvfStream.remaining,
+                partialSvf = !svfStream.length || !svfStream.remaining;
+            if (!partialPvf && !partialSvf) {
+                _softReadSamples();
+            } else {
+                this.dispatchEvent(new ExtractedSamplesEvent({
+                    videoSamplesDuration: this.videoSamplesDuration,
+                    audioSamplesDuration: this.audioSamplesDuration,
+                    partialPvf,
+                    partialSvf
+                }));
+            }
         }
     }
 
