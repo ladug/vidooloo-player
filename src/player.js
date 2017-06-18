@@ -28,6 +28,7 @@ export default class VidoolooPlayer {
     configurations = {};
     container = document.createElement("div");
     canvasPlayer = null;
+    controls = null;
     svfStream = null;
     digester = null;
     decoder = null;
@@ -52,9 +53,9 @@ export default class VidoolooPlayer {
     }
 
     onPlayerReady() {
-        const {canvasPlayer, digester, decoder} = this;
-        this.playback = new PlayBackControl(canvasPlayer, digester, decoder);
-        this.playback.start();
+        const {canvasPlayer, digester, decoder, controls} = this;
+        this.playback = new PlayBackControl(canvasPlayer, digester, decoder, controls);
+        this.playback.init();
     }
 
     createDecoder() {

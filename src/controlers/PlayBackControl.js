@@ -11,19 +11,22 @@ import {sec, assert} from '../common';
 export default class PlayBackControl extends EventEmitter {
     digester = null;
     canvasPlayer = null;
+    controls = null;
     decoder = null;
     currentTime = 0;
     minBuffer = 2;
     pictureBuffer = [];
 
-    constructor(canvasPlayer, digester, decoder) {
+    constructor(canvasPlayer, digester, decoder, controls) {
         super();
         assert(canvasPlayer, "Error #2213");
         assert(digester, "Eror #2214");
         assert(decoder, "Error #2215");
+        assert(controls, "Error #2216");
         this.canvasPlayer = canvasPlayer;
         this.digester = digester;
         this.decoder = decoder;
+        this.controls = controls;
         this._connectEvents();
     }
 
@@ -59,7 +62,7 @@ export default class PlayBackControl extends EventEmitter {
         decoder.configure(svf.sps, svf.pps);
     };
 
-    start() {
+    init() {
         const {digester, _initDecoder, _decodeSample} = this;
         digester.digestSamples();
         _initDecoder(digester.headers);
