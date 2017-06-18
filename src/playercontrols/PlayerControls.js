@@ -51,6 +51,14 @@ export default class PlayerControls extends EventEmitter {
 
     };
 
+    setVideoLength(time) {
+        this.playerTime.videoLength = time || 0;
+    }
+
+    setVideoTime(time) {
+        this.playerTime.videoTime = time || 0;
+    }
+
     setPlayProgress(pre) {
         this.statusBar.setPlayProgress(pre)
     }

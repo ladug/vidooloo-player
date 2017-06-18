@@ -15,6 +15,7 @@ export default class DigestControl extends EventEmitter {
     svfDownloadManager = null;
     videoPreloadDuration = 0;
     audioPreloadDuration = 0;
+    _basicInfo = {};
     headers = {
         pvf: null,
         svf: null
@@ -54,12 +55,22 @@ export default class DigestControl extends EventEmitter {
     };
 
     _onParserHeaders = (event) => {
+        const {duration, timeScale, videoWidth, videoHeight} = event.svfHeader.videoConfigurations;
         this.headers = {
             pvf: event.pvfHeader,
             svf: event.svfHeader
         };
-        this.dispatchEvent(new DigestControlReady());
+        this._basicInfo = {
+            videoDuration: Math.floor(duration / timeScale * sec),
+            videoWidth,
+            videoHeight
+        };
+        this.dispatchEvent(new DigestControlReady(this._basicInfo));
     };
+
+    getBasicInfo() {
+        return this._basicInfo;
+    }
 
     _onPvfChunk = (event) => {
         console.log("_onPvfChunk", event);
