@@ -4,19 +4,26 @@
 import {sec} from '../common';
 
 const intToTime = (time) => {
-    time = Math.floor(time / sec);
+        time = Math.floor(time / sec);
 
-    let hours = Math.floor(time / 3600),
-        minutes = Math.floor((time - (hours * 3600)) / 60),
-        seconds = time - (hours * 3600) - (minutes * 60);
+        let hours = Math.floor(time / 3600),
+            minutes = Math.floor((time - (hours * 3600)) / 60),
+            seconds = time - (hours * 3600) - (minutes * 60);
 
-    const result = [
-        hours && (hours < 10 ? "0" + hours : hours),
-        (minutes < 10 ? "0" + minutes : minutes),
-        (seconds < 10 ? "0" + seconds : seconds),
-    ];
-    return result.filter(val => val).join(":");
-};
+        const result = [
+            hours && (hours < 10 ? "0" + hours : hours),
+            (minutes < 10 ? "0" + minutes : minutes),
+            (seconds < 10 ? "0" + seconds : seconds),
+        ];
+        return result.filter(val => val).join(":");
+    },
+    getSlashSpacer = (style = '') => {
+        let span = document.createElement("span");
+        span.style.cssText = style;
+        span.innerHTML = "&nbsp;/&nbsp;";
+        return span;
+    };
+
 export default class PlayerTime {
     videoLengthDOM = document.createElement("div");
     videoTimeDOM = document.createElement("div");
@@ -24,11 +31,18 @@ export default class PlayerTime {
     _videoLength = 0;
     _videoTime = 0;
 
-    constructor() {
-        const {container, videoTimeDOM, videoLengthDOM, _updateDisplay} = this;
+    constructor(time, length) {
+        const {container, videoTimeDOM, videoLengthDOM} = this;
         container.appendChild(videoLengthDOM);
+        container.appendChild(getSlashSpacer("float:right"));
         container.appendChild(videoTimeDOM);
-        _updateDisplay();
+
+        container.style.cssText = "float:right";
+        videoTimeDOM.style.cssText = "float:right";
+        videoLengthDOM.style.cssText = "float:right";
+
+        this.videoTime = time || 0;
+        this.videoLength = length || 0;
     }
 
     set videoLength(time) {

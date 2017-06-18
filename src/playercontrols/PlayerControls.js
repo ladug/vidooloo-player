@@ -3,6 +3,7 @@
  */
 import EventEmitter from "../events/EventEmitter";
 import PlayerStatusBar from "./PlayerStatusBar";
+import PlayerTime from "./PlayerTime";
 import {PlayEvent, PauseEvent, StopEvent} from "./PlayerControlEvents";
 
 const createButton = (value, onClick) => {
@@ -17,7 +18,8 @@ export default class PlayerControls extends EventEmitter {
     configurations = {};
     container = document.createElement("div");
     statusBar = new PlayerStatusBar();
-    time = new new PlayerTime();
+    playerTime = new PlayerTime();
+
     constructor(configurations = {}) {
         super();
         this.configurations = {
@@ -40,11 +42,12 @@ export default class PlayerControls extends EventEmitter {
         this.dispatchEvent(new StopEvent());
     };
     _createControls = () => {
-        const {container, statusBar, _onPlayClick, _onPauseClick, _onStopClick} = this;
+        const {container, statusBar, playerTime, _onPlayClick, _onPauseClick, _onStopClick} = this;
         statusBar.attachTo(container);
         container.appendChild(createButton("Play", _onPlayClick));
         container.appendChild(createButton("Pause", _onPauseClick));
         container.appendChild(createButton("Stop", _onStopClick));
+        container.appendChild(playerTime.container);
 
     };
 
