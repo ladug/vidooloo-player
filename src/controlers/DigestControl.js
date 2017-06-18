@@ -46,7 +46,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     digestSamples() {
-        this.dataParser.parse();
+        return this.dataParser.parse();
     }
 
     _onSamplesUpdate = (event) => {
