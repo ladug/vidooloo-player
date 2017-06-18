@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "test",
-    "start": "npm run dev",
     "webpack": "webpack --progress --colors",
+    "start": "npm run dev",
     "dev": "webpack-dev-server --devtool 'source-map' --progress --colors --inline"
   },
   "repository": {
