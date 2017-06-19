@@ -51,7 +51,7 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             sampleData.set(slice, index * skipFactor);
         });
         svfChunk.forEach((byte, index) => {
-            sampleData[(index + 1) * skipFactor] = byte;
+            sampleData[(index + 1) * skipFactor -1] = byte;
         });
         return sampleData;
     },
