@@ -29,6 +29,8 @@ export default class DigestControl extends EventEmitter {
         }
     };
     _basicInfo = {};
+    _isPvfLoading = false;
+    _isSvfLoading = false;
     headers = {
         pvf: null,
         svf: null
@@ -52,7 +54,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     shiftVideoSample() {
-        const {timeScale} = this.preload.video.timeScale,
+        const {timeScale} = this.preload.video,
             videoSample = this.dataParser.getVideoSample();
         this.preload.video.currentTime += videoSample.duration;
         this._quePreloadCheck();
@@ -68,7 +70,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     shiftAudioSample() {
-        const {timeScale} = this.preload.audio.timeScale,
+        const {timeScale} = this.preload.audio,
             audioSample = this.dataParser.getAudioSample();
         this.preload.audio.currentTime += audioSample.duration;
         this._quePreloadCheck();
@@ -99,15 +101,24 @@ export default class DigestControl extends EventEmitter {
             } = this.preload,
             isVideoPreloaded = (videoSamplesDuration - videoCurrentTime) >= videoPreloadDuration,
             isAudioPreloaded = (audioSamplesDuration - audioCurrentTime) >= audioPreloadDuration;
-        if (!isVideoPreloaded || !isAudioPreloaded) {
+
+        console.warn(videoCurrentTime / 60000, (videoSamplesDuration - videoCurrentTime) / 60000);
+        if (!isVideoPreloaded /*|| !isAudioPreloaded*/) {
             this._loadNextChunk();
         }
     };
 
     _loadNextChunk() {
-        const {isPartialPvf, isPartialSvf} = this.preload;
-        isPartialPvf && this.pvfDownloadManager.readChunks();
-        isPartialSvf && this.svfDownloadManager.readChunk();
+        const {_isPvfLoading: isPvfLoading, _isSvfLoading: isSvfLoading} = this,
+            {isPartialPvf, isPartialSvf} = this.preload;
+        if (!isPvfLoading && isPartialPvf) {
+            this._isPvfLoading = true;
+            this.pvfDownloadManager.readChunks();
+        }
+        if (!isSvfLoading && isPartialSvf) {
+            this._isSvfLoading = true;
+            this.svfDownloadManager.readChunk();
+        }
     }
 
     _onParserHeaders = (event) => {
@@ -123,7 +134,7 @@ export default class DigestControl extends EventEmitter {
             timeScale: videoTimeScale,
             currentTime: 0,
         };
-        this.preload.video = {
+        this.preload.audio = {
             preloadDuration: preload * audioTimeScale,
             timeScale: audioTimeScale,
             currentTime: 0,
@@ -146,11 +157,13 @@ export default class DigestControl extends EventEmitter {
 
     _onPvfChunk = (event) => {
         console.log("_onPvfChunk", event);
+        this._isPvfLoading = false;
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));
     };
 
     _onSvfChunk = (event) => {
         console.log("_onSvfChunk", event);
+        this._isSvfLoading = false;
         this.dataParser.addSvfChunk(new Uint8Array(event.chunk));
     };
 

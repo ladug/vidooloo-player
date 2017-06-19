@@ -48,24 +48,36 @@ export default class PlayBackControl extends EventEmitter {
 
     _onPictureReady = (event) => {
         console.error("_onPictureReady", event);
-        const {pictureBuffer, minBuffer, _decodeSample, canvasPlayer} = this;
+        const {pictureBuffer, _displayFrame} = this;
         pictureBuffer.push({
             data: event.data,
             width: event.width,
             height: event.height
         });
+
+        window.setTimeout(() => {
+            _displayFrame();
+        }, 100);
+    };
+
+    _displayFrame = () => {
+        const {minBuffer, _decodeSample, pictureBuffer, canvasPlayer} = this;
         if (pictureBuffer.length < minBuffer) {
             window.setTimeout(_decodeSample, 0)
         }
-        //canvasPlayer.renderPicture(pictureBuffer.shift());
+        canvasPlayer.renderPicture(pictureBuffer.shift());
     };
 
     _decodeSample = () => {
+
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
         if (sample) {
-            this._updatePlaybackTime(sample.duration)
+            console.error("sent to decode", sample.sampleData);
+            this._updatePlaybackTime(sample.duration);
             decoder.decode(sample);
+        } else {
+            debugger;
         }
     };
 
