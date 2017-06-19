@@ -58,7 +58,6 @@ export default class PlayBackControl extends EventEmitter {
     _decodeSample = () => {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
-        console.log(sample);
         if (sample) {
             decoder.decode(sample);
         }
