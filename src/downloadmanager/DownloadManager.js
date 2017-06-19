@@ -17,7 +17,7 @@ export default class DownloadManager extends EventEmitter {
         useWorkers: false,
         readOffset: 0,
         headerSize: 56,
-        readSize: 128 * kb, //per thread?
+        readSize: 32 * kb, //per thread?
         streamConfigurations: {
             responseType: "arraybuffer",
         }
