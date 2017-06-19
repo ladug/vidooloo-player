@@ -14,7 +14,7 @@ const getCrossChunkData = (chunks, firstChunkOffset, lastChunkDataSize) => {
     getSplitData = (firstChunk, firstChunkOffset, secondChunk, missingBytes) => {
         //super fast for under 50 bytes operations, otherwise best to use mergeBuffers or alike
         const result = [];
-        for (let i = 0; i < missingBytes; i++) {
+        for (let i = firstChunkOffset; i < firstChunk.length; i++) {
             result.push(firstChunk[firstChunkOffset + i]);
         }
         for (let i = 0; i < missingBytes; i++) {
@@ -112,13 +112,13 @@ export default class BufferByteStream {
     }
 
     _read(readSize, operator) {
-        const {chunkOffset, currentChunk, currentChunkData: {size}} = this,
+        const {chunkOffset, currentChunk, nextChunk, currentChunkData: {size}} = this,
             missingBytes = (chunkOffset + readSize) - size;
         if (missingBytes > 0) {
             this._updateChunkIndex(1);
             this._updateOffset(readSize, missingBytes);
             return operator(
-                getSplitData(currentChunk, chunkOffset, this.nextChunk, missingBytes)
+                getSplitData(currentChunk, chunkOffset, nextChunk, missingBytes)
             );
         }
         this._updateOffset(readSize);
@@ -134,13 +134,10 @@ export default class BufferByteStream {
     }
 
     rollback() {
-        if (this._isSnap) {
-            const {_snapOffset, _snapChunkIndex, _snapChunkOffset} = this;
-            this._isSnap = false;
-            this.offset = _snapOffset;
-            this.chunkIndex = _snapChunkIndex;
-            this.chunkOffset = _snapChunkOffset;
-        }
+        const {_snapOffset, _snapChunkIndex, _snapChunkOffset} = this;
+        this.offset = _snapOffset;
+        this.chunkIndex = _snapChunkIndex;
+        this.chunkOffset = _snapChunkOffset;
     }
 
     commit() {
