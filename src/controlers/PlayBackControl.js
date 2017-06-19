@@ -32,6 +32,11 @@ export default class PlayBackControl extends EventEmitter {
         this._setBasicInfo();
     }
 
+    _updatePlaybackTime(frameSeconds) {
+        this.currentTime += frameSeconds;
+        this.controls.setVideoTime(this.currentTime);
+    }
+
     _setBasicInfo() {
         const basicInfo = this.digester.getBasicInfo();
         this.controls.setVideoLength(basicInfo.videoDuration);
@@ -59,6 +64,7 @@ export default class PlayBackControl extends EventEmitter {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
         if (sample) {
+            this._updatePlaybackTime(sample.duration)
             decoder.decode(sample);
         }
     };

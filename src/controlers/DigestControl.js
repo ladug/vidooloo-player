@@ -11,6 +11,7 @@ import {DigestControlReady} from "./DigestControlEvents";
 
 export default class DigestControl extends EventEmitter {
     dataParser = new DataParser();
+    preloadCheckTimer = 0;
     pvfDownloadManager = null;
     svfDownloadManager = null;
     preload = {
@@ -51,17 +52,30 @@ export default class DigestControl extends EventEmitter {
     }
 
     shiftVideoSample() {
-        const videoSample = this.dataParser.getVideoSample();
+        const {timeScale} = this.preload.video.timeScale,
+            videoSample = this.dataParser.getVideoSample();
         this.preload.video.currentTime += videoSample.duration;
-        this._checkRunPreloaded();
-        return videoSample;
+        this._quePreloadCheck();
+        return {
+            ...videoSample,
+            duration: videoSample.duration / timeScale * sec
+        };
+    }
+
+    _quePreloadCheck() {
+        window.clearTimeout(this.preloadCheckTimer);
+        this.preloadCheckTimer = window.setTimeout(this._checkRunPreloaded, 0);
     }
 
     shiftAudioSample() {
-        const audioSample = this.dataParser.getAudioSample();
+        const {timeScale} = this.preload.audio.timeScale,
+            audioSample = this.dataParser.getAudioSample();
         this.preload.audio.currentTime += audioSample.duration;
-        this._checkRunPreloaded();
-        return audioSample;
+        this._quePreloadCheck();
+        return {
+            ...audioSample,
+            duration: audioSample.duration / timeScale * sec
+        };
     }
 
     digestSamples() {
@@ -85,7 +99,6 @@ export default class DigestControl extends EventEmitter {
             } = this.preload,
             isVideoPreloaded = (videoSamplesDuration - videoCurrentTime) >= videoPreloadDuration,
             isAudioPreloaded = (audioSamplesDuration - audioCurrentTime) >= audioPreloadDuration;
-
         if (!isVideoPreloaded || !isAudioPreloaded) {
             this._loadNextChunk();
         }
