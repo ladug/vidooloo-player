@@ -7,7 +7,6 @@ import {PictureDecodedEvent} from "../Decoder/DecoderEvents";
 import {} from "../canvasplayer/CanvasEvents";
 import {sec, assert} from '../common';
 
-
 export default class PlayBackControl extends EventEmitter {
     digester = null;
     canvasPlayer = null;
@@ -57,7 +56,7 @@ export default class PlayBackControl extends EventEmitter {
 
         window.setTimeout(() => {
             _displayFrame();
-        }, 100);
+        }, 40);
     };
 
     _displayFrame = () => {
