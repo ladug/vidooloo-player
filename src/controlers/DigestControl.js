@@ -13,15 +13,27 @@ export default class DigestControl extends EventEmitter {
     dataParser = new DataParser();
     pvfDownloadManager = null;
     svfDownloadManager = null;
-    videoPreloadDuration = 0;
-    audioPreloadDuration = 0;
+    preload = {
+        isPartialPvf: false,
+        isPartialSvf: false,
+        video: {
+            preloadDuration: 0,
+            loadedTime: 1,
+            currentTime: 0,
+        },
+        audio: {
+            preloadDuration: 0,
+            loadedTime: 1,
+            currentTime: 0,
+        }
+    };
     _basicInfo = {};
     headers = {
         pvf: null,
         svf: null
     };
     configurations = {
-        preload: 5 * sec
+        preload: 5
     };
 
     constructor(pvfDownloadManager, svfDownloadManager, configurations = {}) {
@@ -39,11 +51,15 @@ export default class DigestControl extends EventEmitter {
     }
 
     shiftVideoSample() {
-        return this.dataParser.getVideoSample();
+        const videoSample = this.dataParser.getVideoSample();
+        this.preload.video.currentTime += videoSample.duration;
+        return videoSample;
     }
 
     shiftAudioSample() {
-        return this.dataParser.getAudioSample();
+        const audioSample = this.dataParser.getAudioSample();
+        this.preload.audio.currentTime += audioSample.duration;
+        return audioSample;
     }
 
     digestSamples() {
@@ -52,16 +68,57 @@ export default class DigestControl extends EventEmitter {
 
     _onSamplesUpdate = (event) => {
         console.log("_onSamplesUpdate", event);
+        console.log("time", event.videoSamplesDuration / this.preload.video.timeScale);
+        const {videoSamplesDuration, audioSamplesDuration, isPartialSvf, isPartialPvf} = event;
+        this.preload.video.loadedTime = videoSamplesDuration;
+        this.preload.audio.loadedTime = audioSamplesDuration;
+        this.preload.isPartialPvf = isPartialPvf;
+        this.preload.isPartialSvf = isPartialSvf;
+        this._checkRunPreloaded();
     };
 
+    _checkRunPreloaded = () => {
+        const {
+                video: {loadedTime: videoSamplesDuration, preloadDuration: videoPreloadDuration, currentTime: videoCurrentTime},
+                audio: {loadedTime: audioSamplesDuration, preloadDuration: audioPreloadDuration, currentTime: audioCurrentTime}
+            } = this.preload,
+            isVideoPreloaded = (videoSamplesDuration - videoCurrentTime) >= videoPreloadDuration,
+            isAudioPreloaded = (audioSamplesDuration - audioCurrentTime) >= audioPreloadDuration;
+
+        if (!isVideoPreloaded || !isAudioPreloaded) {
+            this._loadNextChunk();
+        }
+    };
+
+    _loadNextChunk() {
+        const {isPartialPvf, isPartialSvf} = this.preload;
+        isPartialPvf && this.pvfDownloadManager.readChunks();
+        isPartialSvf && this.svfDownloadManager.readChunk();
+    }
+
     _onParserHeaders = (event) => {
-        const {duration, timeScale, videoWidth, videoHeight} = event.svfHeader.videoConfigurations;
+        const {duration: videoDuration, timeScale: videoTimeScale, videoWidth, videoHeight} = event.svfHeader.videoConfigurations,
+            {duration: audioDuration, timeScale: audioTimeScale} = event.svfHeader.audioConfigurations,
+            {preload} = this.configurations;
         this.headers = {
             pvf: event.pvfHeader,
             svf: event.svfHeader
         };
+        this.preload.video = {
+            preloadDuration: preload * videoTimeScale,
+            timeScale: videoTimeScale,
+            currentTime: 0,
+        };
+        this.preload.video = {
+            preloadDuration: preload * audioTimeScale,
+            timeScale: audioTimeScale,
+            currentTime: 0,
+        };
         this._basicInfo = {
-            videoDuration: Math.floor(duration / timeScale * sec),
+            videoDuration: Math.floor(videoDuration / videoTimeScale),
+            audioDuration: Math.floor(audioDuration / audioTimeScale),
+            videoTimeScale,
+            audioTimeScale,
             videoWidth,
             videoHeight
         };
@@ -84,7 +141,7 @@ export default class DigestControl extends EventEmitter {
 
     init() {
         const {pvfDownloadManager, svfDownloadManager} = this;
-        pvfDownloadManager.readChunks(1);
+        pvfDownloadManager.readChunks();
         svfDownloadManager.readChunk();
     }
 }
