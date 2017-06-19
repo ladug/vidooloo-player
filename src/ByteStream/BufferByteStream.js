@@ -106,9 +106,9 @@ export default class BufferByteStream {
         this.chunkOffset = 0;
     }
 
-    _updateOffset(readSize, chunkReadSize = 0) {
+    _updateOffset(readSize, chunkReadSize = readSize) {
         this.offset += readSize;
-        this.chunkOffset += readSize + chunkReadSize;
+        this.chunkOffset += chunkReadSize;
     }
 
     _read(readSize, operator) {
@@ -175,7 +175,7 @@ export default class BufferByteStream {
                 readOffset = offset + readSize,
                 readChunksData = filterSome(
                     chunksData.slice(chunkIndex),
-                    ({end}) => end <= readOffset
+                    ({start, end}) => end <= readOffset || (end >= readOffset && readOffset >= start )
                 ),
                 lastChunkDataSize = readOffset - last(readChunksData).start;
             this._updateChunkIndex(lastIndex(readChunksData)); // minus the current chunk
