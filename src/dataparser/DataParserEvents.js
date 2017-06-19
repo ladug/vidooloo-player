@@ -36,6 +36,14 @@ export class ExtractedSamplesEvent extends Event {
         this._partialSvf = !!payload.partialSvf;
     }
 
+    get isPartialPvf() {
+        return this._partialPvf;
+    }
+
+    get isPartialSvf() {
+        return this._partialSvf;
+    }
+
     get videoSamplesDuration() {
         return this._videoSamplesDuration;
     }
