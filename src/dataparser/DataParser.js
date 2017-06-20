@@ -24,8 +24,13 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
         factor: svfStream.read8()
     }),
     getSampleHeaders = (pvfStream, svfStream) => {
-        const {size: dataChunkSize, factor} = getSvfSampleHeader(svfStream),
-            {flags, size, duration} = getPvfSampleHeader(pvfStream),
+        const {size: dataChunkSize, factor} = getSvfSampleHeader(svfStream);
+
+        if (dataChunkSize > 0) {
+            debugger
+        }
+
+        const {flags, size, duration} = getPvfSampleHeader(pvfStream),
             svfChunkSize = getSvfChunkSize(size, factor),
             pvfChunkSize = size - svfChunkSize;
         return {
@@ -51,7 +56,7 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             sampleData.set(slice, index * skipFactor);
         });
         svfChunk.forEach((byte, index) => {
-            sampleData[(index + 1) * skipFactor -1] = byte;
+            sampleData[(index + 1) * skipFactor - 1] = byte;
         });
         return sampleData;
     },
@@ -171,7 +176,7 @@ export default class DataParser extends EventEmitter {
             const partialPvf = !pvfStream.length || !pvfStream.remaining,
                 partialSvf = !svfStream.length || !svfStream.remaining;
             if (!partialPvf && !partialSvf) {
-                _softReadSamples();
+                _softReadSamples(0);
             } else {
                 this.dispatchEvent(new ExtractedSamplesEvent({
                     videoSamplesDuration: this.videoSamplesDuration,
@@ -183,7 +188,7 @@ export default class DataParser extends EventEmitter {
         }
     }
 
-    _softReadSamples = () => {
+    _softReadSamples = (count) => {
         window.clearTimeout(this.sampleTimer);
         const {pvfStream, svfStream, videoSamples, audioSamples, _softReadSamples} = this,
             sampleData = getSampleData(pvfStream, svfStream);
@@ -195,7 +200,13 @@ export default class DataParser extends EventEmitter {
                 this.audioSamplesDuration += sampleData.duration;
                 audioSamples.push(sampleData);
             }
-            this.sampleTimer = window.setTimeout(_softReadSamples, 0);
+            if (count < 9000) {
+                _softReadSamples(count + 1);
+            } else {
+                this.sampleTimer = window.setTimeout(() => {
+                    _softReadSamples(0);
+                }, 0);
+            }
         } else {
             this.dispatchEvent(new ExtractedSamplesEvent({
                 videoSamplesDuration: this.videoSamplesDuration,

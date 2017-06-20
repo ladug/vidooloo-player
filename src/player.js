@@ -81,7 +81,7 @@ export default class VidoolooPlayer {
     }
 
     _onCanvasReady = (event) => {
-        console.log("_onCanvasReady", event);
+        //console.log("_onCanvasReady", event);
         this.updateReadyState("canvasPlayer", true);
         this.controls = new PlayerControls();
         this.controls.attachTo(this.container);
@@ -96,17 +96,17 @@ export default class VidoolooPlayer {
     }
 
     _onDecoderReady = (event) => {
-        console.log("_onDecoderReady", event);
+        //console.log("_onDecoderReady", event);
         this.updateReadyState("decoder", true);
     };
 
     _onDigestControlReady = (event) => {
-        console.log("_onDigestControlReady", event);
+        //console.log("_onDigestControlReady", event);
         this.updateReadyState("digester", true);
     };
 
     _onDownloadManagerReady = (event) => {
-        console.log("_onDownloadManagerReady", event);
+        //console.log("_onDownloadManagerReady", event);
         this.svfStream = new SvfStreamManager({
             type: event.payload.type,
             version: event.payload.version,

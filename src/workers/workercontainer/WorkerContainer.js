@@ -23,12 +23,12 @@ export default class WorkerContainer {
     }
 
     addEventListener(type, handler) {
-        console.warn("Bad implementation [addEventListener]!");
+        //console.warn("Bad implementation [addEventListener]!");
         this.worker.addEventListener(type, handler);
     }
 
     postMessage(data, moreData) {
-        console.warn("Bad implementation [postMessage]!");
+        //console.warn("Bad implementation [postMessage]!");
         this.worker.postMessage(data, moreData);
     }
 }

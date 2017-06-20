@@ -18,7 +18,7 @@ export default class SvfStreamManager extends EventEmitter {
         src: null,
         useWorkers: false,
         readOffset: 0,
-        readSize: 5 * kb,
+        readSize: 151 * kb,
     };
 
     constructor(configurations = {}) {
@@ -37,10 +37,10 @@ export default class SvfStreamManager extends EventEmitter {
         this.dispatchEvent(new ChunkDownloadedEvent(event));
     };
     _onChunkError = (event) => {
-        console.error("SVF-_onChunkError", event);
+        //console.error("SVF-_onChunkError", event);
     };
     _onChunkAbort = (event) => {
-        console.error("SVF-_onChunkAbort", event);
+        //console.error("SVF-_onChunkAbort", event);
     };
 
     readChunk() {

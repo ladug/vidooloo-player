@@ -111,7 +111,7 @@ export default class Decoder extends EventEmitter {
 
     _runDecoderQue = () => {
         window.clearTimeout(this.decodingTimeout);
-        this.decodingTimeout = window.setTimeout(this._runDecode, 0);
+        this._runDecode();//this.decodingTimeout = window.setTimeout(this._runDecode, 0);
     };
 
     _runDecode = () => {
@@ -138,19 +138,19 @@ export default class Decoder extends EventEmitter {
     };
 
     _onWorkerMessage = ({data}) => {
-        console.error("_onWorkerMessage", data);
+        //console.error("_onWorkerMessage", data);
 
         if (data.consoleLog) {
             if (data.consoleLog === "broadway worker initialized") {
                 this.dispatchEvent(new DecoderReadyEvent());
                 this.isWorkerReady = true;
             } else {
-                console.warn(data.consoleLog);
+                //console.warn(data.consoleLog);
                 this._isWorkerBusy = false;
                 this._runDecoderQue();
             }
         } else {
-            window.setTimeout(() => {
+           // window.setTimeout(() => {
                 this.dispatchEvent(new PictureDecodedEvent({
                     data: new Uint8Array(data.buf),
                     width: data.width,
@@ -159,11 +159,11 @@ export default class Decoder extends EventEmitter {
                 }));
                 this._isWorkerBusy = false;
                 this._runDecoderQue();
-            }, 0)
+            //}, 0)
         }
     };
 
     _onWorkerError = (e) => {
-        console.error("_onWorkerError", e);
+        //console.error("_onWorkerError", e);
     };
 }

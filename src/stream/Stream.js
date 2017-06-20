@@ -55,7 +55,7 @@ export default class Stream extends EventEmitter {
         }));
     };
     _onProgress = (event) => {
-        console.log(event);
+        //console.log(event);
         this.dispatchEvent(new StreamProgress({
             response: null,
             time: (new Date()).getTime() - this._start,

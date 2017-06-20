@@ -30,15 +30,15 @@ export default class PlayerControls extends EventEmitter {
     }
 
     _onPlayClick = () => {
-        console.log("[PlayerControls]->_onPlayClick");
+        //console.log("[PlayerControls]->_onPlayClick");
         this.dispatchEvent(new PlayEvent());
     };
     _onPauseClick = () => {
-        console.log("[PlayerControls]->_onPauseClick");
+        //console.log("[PlayerControls]->_onPauseClick");
         this.dispatchEvent(new PauseEvent());
     };
     _onStopClick = () => {
-        console.log("[PlayerControls]->_onStopClick");
+        //console.log("[PlayerControls]->_onStopClick");
         this.dispatchEvent(new StopEvent());
     };
     _createControls = () => {

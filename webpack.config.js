@@ -3,6 +3,7 @@ const webpack = require('webpack');
 module.exports = {
     context: path.resolve(__dirname, './src'),
     devServer: {
+        host : "10.0.0.1",
         contentBase: __dirname + '/test-suite', // `__dirname` is root of the project
         compress: true,
     },

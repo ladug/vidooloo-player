@@ -6,7 +6,7 @@ import {ManagerReadyEvent, ChunkDownloadedEvent} from "./DownloadManagerEvents";
 import Stream from "../stream/Stream";
 import {StreamSuccess, StreamError, StreamProgress, StreamAbort} from "../stream/StreamEvents";
 import {PvfHeader} from "../readers/PvfReader";
-import {assert, kb} from "../common";
+import {assert, kb,mb} from "../common";
 
 export default class DownloadManager extends EventEmitter {
     streamThreads = [];
@@ -17,7 +17,7 @@ export default class DownloadManager extends EventEmitter {
         useWorkers: false,
         readOffset: 0,
         headerSize: 56,
-        readSize: 32 * kb, //per thread?
+        readSize: 8 * mb, //per thread?
         streamConfigurations: {
             responseType: "arraybuffer",
         }
@@ -88,16 +88,16 @@ export default class DownloadManager extends EventEmitter {
     };
 
     _chunkProgress = (event) => {
-        console.info("_chunkProgress", event);
+        //console.info("_chunkProgress", event);
     };
 
     _chunkAborted = (event) => {
-        console.error("Error reading chunk(aborted)!", event);
+        //console.error("Error reading chunk(aborted)!", event);
         this._checkChunkQueue();
     };
 
     _chunkError = (event) => {
-        console.error("Error reading chunk!", event);
+        //console.error("Error reading chunk!", event);
         this._checkChunkQueue();
     };
 
