@@ -18,7 +18,7 @@ export default class SvfStreamManager extends EventEmitter {
         src: null,
         useWorkers: false,
         readOffset: 0,
-        readSize: 64 * kb,
+        readSize: 5 * kb,
     };
 
     constructor(configurations = {}) {

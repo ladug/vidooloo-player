@@ -51,7 +51,7 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
             sampleData.set(slice, index * skipFactor);
         });
         svfChunk.forEach((byte, index) => {
-            sampleData[(index + 1) * skipFactor] = byte;
+            sampleData[(index + 1) * skipFactor -1] = byte;
         });
         return sampleData;
     },
@@ -62,15 +62,25 @@ const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / ski
         return svfChunkSize && ((svfChunkSize + dataChunkSize) <= svfRemaining);
     },
     getSampleData = (pvfStream, svfStream) => {
+        const isPvfHeaderComplete = pvfStream.remaining >= 5,
+            isSvfHeaderComplete = svfStream.remaining >= 4;
+        if (!isSvfHeaderComplete || !isPvfHeaderComplete) {
+            pvfStream.rollback();
+            svfStream.rollback();
+            return {
+                partial: true,
+                isPvfComplete: isPvfHeaderComplete,
+                isSvfComplete: isSvfHeaderComplete
+            };
+        }
         pvfStream.snap();
         svfStream.snap();
         const {pvfChunkSize, svfChunkSize, dataChunkSize, factor, ...rest} = getSampleHeaders(pvfStream, svfStream),
             isPvfComplete = containsCompletePvfSample(pvfChunkSize, pvfStream.remaining),
             isSvfComplete = containsCompleteSvfSample(svfChunkSize, svfStream.remaining, dataChunkSize);
-
         if (!isPvfComplete || !isSvfComplete) {
-            pvfStream.reset();
-            svfStream.reset();
+            pvfStream.rollback();
+            svfStream.rollback();
             return {
                 partial: true,
                 isPvfComplete,
