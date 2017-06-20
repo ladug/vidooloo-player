@@ -198,11 +198,11 @@ export default class BufferByteStream {
     }
 
     read8() {
-        const {chunkOffset, currentChunk, currentChunkData: {size}} = this;
+        const {chunkOffset, currentChunk, nextChunk, currentChunkData: {size}} = this;
         if (chunkOffset === size) {
             this._updateChunkIndex(1);
             this._updateOffset(1);
-            return read8(this.nextChunk);
+            return read8(nextChunk);
         } else {
             this._updateOffset(1);
             return read8(currentChunk, chunkOffset);

@@ -7,6 +7,8 @@ import EventEmitter from "../events/EventEmitter";
 const createCanvas = (width, height) => {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = ["width:", width, "px;height:", height, "px;background-color:#000"].join('');
+    canvas.width = width;
+    canvas.height = height;
     return canvas;
 };
 

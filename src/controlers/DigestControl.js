@@ -56,6 +56,9 @@ export default class DigestControl extends EventEmitter {
     shiftVideoSample() {
         const {timeScale} = this.preload.video,
             videoSample = this.dataParser.getVideoSample();
+        if (!videoSample) {
+            return null;
+        }
         this.preload.video.currentTime += videoSample.duration;
         this._quePreloadCheck();
         return {

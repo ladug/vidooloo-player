@@ -6,7 +6,8 @@ import {} from "./DigestControlEvents";
 import {PictureDecodedEvent} from "../Decoder/DecoderEvents";
 import {} from "../canvasplayer/CanvasEvents";
 import {sec, assert} from '../common';
-
+let sampleCount = 0;
+let timer = 0;
 export default class PlayBackControl extends EventEmitter {
     digester = null;
     canvasPlayer = null;
@@ -15,7 +16,7 @@ export default class PlayBackControl extends EventEmitter {
     currentTime = 0;
     minBuffer = 2;
     pictureBuffer = [];
-
+    _fpsFactor =0;
     constructor(canvasPlayer, digester, decoder, controls) {
         super();
         assert(canvasPlayer, "Error #2213");
@@ -54,9 +55,11 @@ export default class PlayBackControl extends EventEmitter {
             height: event.height
         });
 
+        const compensation = this._fpsFactor ? 41 - ((new Date()).getTime() - this._fpsFactor) : 0;
         window.setTimeout(() => {
             _displayFrame();
-        }, 40);
+        }, compensation > 0 ? compensation : 0);
+        this._fpsFactor = (new Date()).getTime();
     };
 
     _displayFrame = () => {
@@ -72,11 +75,12 @@ export default class PlayBackControl extends EventEmitter {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
         if (sample) {
-            console.error("sent to decode", sample.sampleData);
+            console.error("sample[", sampleCount, "] sent to decode");
             this._updatePlaybackTime(sample.duration);
             decoder.decode(sample);
+            sampleCount++;
         } else {
-            debugger;
+            alert("no more samples! Average FPS : " + (sampleCount / (((new Date()).getTime() - timer) / 1000)));
         }
     };
 
@@ -90,6 +94,8 @@ export default class PlayBackControl extends EventEmitter {
         digester.digestSamples();
         _initDecoder(digester.headers);
         _decodeSample();
+        timer = (new Date()).getTime();
+
     }
 
 
