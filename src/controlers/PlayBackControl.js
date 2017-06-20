@@ -55,11 +55,13 @@ export default class PlayBackControl extends EventEmitter {
             height: event.height
         });
 
-        const compensation = this._fpsFactor ? 41 - ((new Date()).getTime() - this._fpsFactor) : 0;
+        const compensation = this._fpsFactor ? 34 - ((new Date()).getTime() - this._fpsFactor) : 0;
+
         window.setTimeout(() => {
             _displayFrame();
+            this._fpsFactor = (new Date()).getTime();
         }, compensation > 0 ? compensation : 0);
-        this._fpsFactor = (new Date()).getTime();
+
     };
 
     _displayFrame = () => {
