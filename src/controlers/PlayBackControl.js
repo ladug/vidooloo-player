@@ -16,7 +16,8 @@ export default class PlayBackControl extends EventEmitter {
     currentTime = 0;
     minBuffer = 2;
     pictureBuffer = [];
-    _fpsFactor =0;
+    _fpsFactor = 0;
+
     constructor(canvasPlayer, digester, decoder, controls) {
         super();
         assert(canvasPlayer, "Error #2213");

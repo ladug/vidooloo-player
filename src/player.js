@@ -15,7 +15,8 @@ import {DecoderReadyEvent} from "./Decoder/DecoderEvents";
 import {assert, sec} from "./common";
 import Decoder from "./Decoder/Decoder";
 
-const DEBUG_SVF_SRC = "http://kakamaika.com/~cdnkakamaika/digest/mozilla_story.svf.digest";
+const DEBUG_SVF_SRC = "http://vido.com/2k-sample.svf.digest";
+//const DEBUG_SVF_SRC = "http://vidooloo.com/wp-content/test-files/mozilla_story.svf.digest";
 const DECODE_WORKER_SRC = "decoder.bundle.js";
 
 const getConfigurations = hostingTag => ({
