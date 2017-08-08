@@ -5,7 +5,7 @@ import EventEmitter from '../events/EventEmitter';
 import ByteStream from "../ByteStream/ByteStream";
 
 export default class AudioDecoder extends EventEmitter {
-    _configurations = {
+    _configuratins = {
         floatingPoint: true,
         CHANNEL_CONFIG_NONE: 0,
         CHANNEL_CONFIG_MONO: 1,
@@ -32,11 +32,82 @@ export default class AudioDecoder extends EventEmitter {
             AOT_ESCAPE: 31
         }
     };
+
     _header = {};
     _samples = [];
+    _configurations={
+        sampleRate : 0,
+        bitsPerChannel : 16,
+        channelsPerFrame : 2,
+        floatingPoint : true
+    };
 
-    addSample(sample) {
+    decode(sample) {
 
+        const sampleStream = new ByteStream(sample.sampleData);
+        debugger;
+        /*let elementType;
+        while ((elementType = stream.read(3)) !== END_ELEMENT) {
+            var id = stream.read(4);
+
+            switch (elementType) {
+                // single channel and low frequency elements
+                case SCE_ELEMENT:
+                case LFE_ELEMENT:
+                    var ics = new ICStream(this.config);
+                    ics.id = id;
+                    elements.push(ics);
+                    ics.decode(stream, config, false);
+                    break;
+
+                // channel pair element
+                case CPE_ELEMENT:
+                    var cpe = new CPEElement(this.config);
+                    cpe.id = id;
+                    elements.push(cpe);
+                    cpe.decode(stream, config);
+                    break;
+
+                // channel coupling element
+                case CCE_ELEMENT:
+                    var cce = new CCEElement(this.config);
+                    this.cces.push(cce);
+                    cce.decode(stream, config);
+                    break;
+
+                // data-stream element
+                case DSE_ELEMENT:
+                    var align = stream.read(1),
+                        count = stream.read(8);
+
+                    if (count === 255)
+                        count += stream.read(8);
+
+                    if (align)
+                        stream.align();
+
+                    // skip for now...
+                    stream.advance(count * 8);
+                    break;
+
+                // program configuration element
+                case PCE_ELEMENT:
+                    throw new Error("TODO: PCE_ELEMENT")
+                    break;
+
+                // filler element
+                case FIL_ELEMENT:
+                    if (id === 15)
+                        id += stream.read(8) - 1;
+
+                    // skip for now...
+                    stream.advance(id * 8);
+                    break;
+
+                default:
+                    throw new Error('Unknown element')
+            }
+        }*/
     }
 
     configure(audioConfigurations){
@@ -51,8 +122,13 @@ export default class AudioDecoder extends EventEmitter {
          timeScale:48000
         */
         this._configurations = {
-            ...this._configurations,
-            ...audioConfigurations
+            sampleRate : audioConfigurations.sampleRate,
+            channelsPerFrame : audioConfigurations.channels,
+            bitsPerChannel : audioConfigurations.sampleSize,
+            compressionId : audioConfigurations.compressionId,
+            timeScale : audioConfigurations.timeScale,
+            duration : audioConfigurations.duration,
+            packetSize : audioConfigurations.packetSize
         }
     }
 

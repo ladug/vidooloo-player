@@ -96,8 +96,10 @@ export default class PlayBackControl extends EventEmitter {
         const sample = digester.shiftAudioSample();
 
         if (sample) {
-            debugger;
-            audioDecoder.decode(sample)
+            audioDecoder.decode(sample);
+            window.setTimeout(() => {
+                this._decodeAudioSample();
+            }, 100);
         } else {
             window.setTimeout(() => {
                 this._decodeAudioSample();
