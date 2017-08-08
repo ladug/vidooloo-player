@@ -88,7 +88,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     _onSamplesUpdate = (event) => {
-        console.log("_onSamplesUpdate", event);
+       // console.log("_onSamplesUpdate", event);
         const {videoSamplesDuration, audioSamplesDuration, isPartialSvf, isPartialPvf} = event;
         this.preload.video.loadedTime = videoSamplesDuration;
         this.preload.audio.loadedTime = audioSamplesDuration;
@@ -105,7 +105,6 @@ export default class DigestControl extends EventEmitter {
             isVideoPreloaded = (videoSamplesDuration - videoCurrentTime) >= videoPreloadDuration,
             isAudioPreloaded = (audioSamplesDuration - audioCurrentTime) >= audioPreloadDuration;
 
-        console.warn(videoCurrentTime / 60000, (videoSamplesDuration - videoCurrentTime) / 60000);
         if (!isVideoPreloaded /*|| !isAudioPreloaded*/) {
             this._loadNextChunk();
         }

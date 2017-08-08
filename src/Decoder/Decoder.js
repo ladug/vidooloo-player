@@ -77,9 +77,7 @@ export default class Decoder extends EventEmitter {
 
     decode(sample) {
         const sampleUnits = getNalUnits(sample.sampleData);
-        sampleUnits.forEach(unit => {
-            this.sampleQue.push(unit);
-        });
+        this.sampleQue.push(sampleUnits);
         this._runDecoderQue();
     }
 
@@ -89,18 +87,20 @@ export default class Decoder extends EventEmitter {
         worker.postMessage({buf: pps.buffer, offset: 0, length: pps.length}, [pps.buffer]);
     }
 
-    _decodeSample(data) {
+    _decodeSample(nalUnits) {
         const {isWorkerBusy, isDecoderBusy, worker} = this;
         if (!isWorkerBusy) {
-            return worker.postMessage(
-                {
-                    buf: data.buffer,
-                    offset: 0,
-                    length: data.length,
-                    info: undefined
-                },
-                [data.buffer]
-            );
+            return nalUnits.forEach((data) => {
+                data.length && worker.postMessage(
+                    {
+                        buf: data.buffer,
+                        offset: 0,
+                        length: data.length,
+                        info: undefined
+                    },
+                    [data.buffer]
+                );
+            })
         }
 
         if (!isDecoderBusy) {
