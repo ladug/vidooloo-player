@@ -2,7 +2,16 @@
  * Created by vladi on 08-Aug-17.
  */
 import EventEmitter from '../events/EventEmitter';
-import ByteStream from "../ByteStream/ByteStream";
+import BitStream from "../bitstream/BitStream";
+
+const SCE_ELEMENT = 0,
+    CPE_ELEMENT = 1,
+    CCE_ELEMENT = 2,
+    LFE_ELEMENT = 3,
+    DSE_ELEMENT = 4,
+    PCE_ELEMENT = 5,
+    FIL_ELEMENT = 6,
+    END_ELEMENT = 7;
 
 export default class AudioDecoder extends EventEmitter {
     _configuratins = {
@@ -15,15 +24,6 @@ export default class AudioDecoder extends EventEmitter {
         CHANNEL_CONFIG_FIVE: 5,
         CHANNEL_CONFIG_FIVE_PLUS_ONE: 6,
         CHANNEL_CONFIG_SEVEN_PLUS_ONE: 8,
-
-        SCE_ELEMENT: 0,
-        CPE_ELEMENT: 1,
-        CCE_ELEMENT: 2,
-        LFE_ELEMENT: 3,
-        DSE_ELEMENT: 4,
-        PCE_ELEMENT: 5,
-        FIL_ELEMENT: 6,
-        END_ELEMENT: 7,
 
         profiles: {
             AOT_AAC_MAIN: 1, // no
@@ -43,85 +43,20 @@ export default class AudioDecoder extends EventEmitter {
     };
 
     decode(sample) {
+        const sampleStream = new BitStream(sample.sampleData);
+        if (sampleStream.peek(12) === 0xfff) {
+            this._readHeader(sampleStream);
+        }
 
-        const sampleStream = new ByteStream(sample.sampleData);
         debugger;
-        /*let elementType;
-         while ((elementType = stream.read(3)) !== END_ELEMENT) {
-         var id = stream.read(4);
 
-         switch (elementType) {
-         // single channel and low frequency elements
-         case SCE_ELEMENT:
-         case LFE_ELEMENT:
-         var ics = new ICStream(this.config);
-         ics.id = id;
-         elements.push(ics);
-         ics.decode(stream, config, false);
-         break;
-
-         // channel pair element
-         case CPE_ELEMENT:
-         var cpe = new CPEElement(this.config);
-         cpe.id = id;
-         elements.push(cpe);
-         cpe.decode(stream, config);
-         break;
-
-         // channel coupling element
-         case CCE_ELEMENT:
-         var cce = new CCEElement(this.config);
-         this.cces.push(cce);
-         cce.decode(stream, config);
-         break;
-
-         // data-stream element
-         case DSE_ELEMENT:
-         var align = stream.read(1),
-         count = stream.read(8);
-
-         if (count === 255)
-         count += stream.read(8);
-
-         if (align)
-         stream.align();
-
-         // skip for now...
-         stream.advance(count * 8);
-         break;
-
-         // program configuration element
-         case PCE_ELEMENT:
-         throw new Error("TODO: PCE_ELEMENT")
-         break;
-
-         // filler element
-         case FIL_ELEMENT:
-         if (id === 15)
-         id += stream.read(8) - 1;
-
-         // skip for now...
-         stream.advance(id * 8);
-         break;
-
-         default:
-         throw new Error('Unknown element')
-         }
-         }*/
     }
 
+
+
     configure(audioConfigurations) {
-        /*
-         adcd:Uint8Array(42) [3, 128, 128, 128, 37, 0, 2, 0, 4, 128, 128, 128, 23, 64, 21, 0, 0, 0, 0, 1, 252, 13, 0, 1, 252, 13, 5, 128, 128, 128, 5, 17, 144, 86, 229, 0, 6, 128, 128, 128, 1, 2]
-         channels:2
-         compressionId:0
-         duration:6591488
-         packetSize:0
-         sampleRate:48000
-         sampleSize:16
-         timeScale:48000
-         */
         this._configurations = {
+            adcd: audioConfigurations.adcd,
             sampleRate: audioConfigurations.sampleRate,
             channelsPerFrame: audioConfigurations.channels,
             bitsPerChannel: audioConfigurations.sampleSize,

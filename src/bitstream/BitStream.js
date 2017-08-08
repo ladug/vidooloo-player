@@ -1,7 +1,6 @@
 /**
  * Created by vladi on 09-Aug-17.
  */
-import {slice} from '../common';
 const BYTE = 8;
 export default class BitStream {
     bytes = new Uint8Array(0);
