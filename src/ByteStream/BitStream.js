@@ -47,32 +47,40 @@ export default class BitStream {
         this.bitPosition = 0;
     }
 
-    readBits(bits) {
-        if (!bits) {
-            return 0;
-        }
+    _peek(bits) {
         const {bitPosition} = this;
-
         switch (Math.floor(bits / 8)) {
             case 0 : // bits < 8
                 const u8 = this._peek8();
-                return this.advance(bits) && ((u8 << bitPosition) & 0xff) >>> (8 - bits);
+                return ((u8 << bitPosition) & 0xff) >>> (8 - bits);
                 break;
             case 1 : // 8 < bits < 16
                 const u16 = this._peek16();
-                return this.advance(bits) && ((u16 << bitPosition) & 0xffff) >>> (16 - bits);
+                return ((u16 << bitPosition) & 0xffff) >>> (16 - bits);
                 break;
             case 2 : // 16 < bits < 24
                 const u24 = this._peek24();
-                return this.advance(bits) && ((u24 << bitPosition) & 0xffffff) >>> (24 - bits);
+                return ((u24 << bitPosition) & 0xffffff) >>> (24 - bits);
                 break;
             case 3 : // 24 < bits < 32
                 const u32 = this._peek32();
-                return this.advance(bits) && (u32 << bitPosition) >>> (32 - bits);
+                return (u32 << bitPosition) >>> (32 - bits);
                 break;
             default:
                 throw new Error("No more than 32!");
         }
+    }
+
+    peek(bits) {
+        return bits
+            ? this._peek(bits)
+            : 0;
+    }
+
+    read(bits) {
+        return bits
+            ? this.advance(bits) && this._peek(bits)
+            : 0;
     }
 
     _peek8() {
