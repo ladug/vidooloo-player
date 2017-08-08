@@ -83,7 +83,10 @@ export default class PlayBackControl extends EventEmitter {
             decoder.decode(sample);
             sampleCount++;
         } else {
-            alert("no more samples! Average FPS : " + (sampleCount / (((new Date()).getTime() - timer) / 1000)));
+            window.setTimeout(()=>{
+                this._decodeSample();
+            },100);
+            //alert("no more samples! Average FPS : " + (sampleCount / (((new Date()).getTime() - timer) / 1000)));
         }
     };
 

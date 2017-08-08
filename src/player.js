@@ -15,7 +15,7 @@ import {DecoderReadyEvent} from "./Decoder/DecoderEvents";
 import {assert, sec} from "./common";
 import Decoder from "./Decoder/Decoder";
 
-const DEBUG_SVF_SRC = "http://vido.com/2k-sample.svf.digest";
+const DEBUG_SVF_SRC = "http://vido.com/720p-sample.svf.digest";
 //const DEBUG_SVF_SRC = "http://vidooloo.com/wp-content/test-files/mozilla_story.svf.digest";
 const DECODE_WORKER_SRC = "decoder.bundle.js";
 
