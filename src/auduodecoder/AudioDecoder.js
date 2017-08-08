@@ -5,7 +5,7 @@ import EventEmitter from '../events/EventEmitter';
 import ByteStream from "../ByteStream/ByteStream";
 
 export default class AudioDecoder extends EventEmitter {
-    configurations = {
+    _configurations = {
         floatingPoint: true,
         CHANNEL_CONFIG_NONE: 0,
         CHANNEL_CONFIG_MONO: 1,
@@ -35,16 +35,26 @@ export default class AudioDecoder extends EventEmitter {
     _header = {};
     _samples = [];
 
-    constructor() {
-        super();
-
-
-    }
-
     addSample(sample) {
 
     }
 
+    configure(audioConfigurations){
+        /*
+         adcd:Uint8Array(42) [3, 128, 128, 128, 37, 0, 2, 0, 4, 128, 128, 128, 23, 64, 21, 0, 0, 0, 0, 1, 252, 13, 0, 1, 252, 13, 5, 128, 128, 128, 5, 17, 144, 86, 229, 0, 6, 128, 128, 128, 1, 2]
+         channels:2
+         compressionId:0
+         duration:6591488
+         packetSize:0
+         sampleRate:48000
+         sampleSize:16
+         timeScale:48000
+        */
+        this._configurations = {
+            ...this._configurations,
+            ...audioConfigurations
+        }
+    }
 
     _readHeader(stream) {
         //https://wiki.multimedia.cx/index.php/ADTS
@@ -76,6 +86,10 @@ export default class AudioDecoder extends EventEmitter {
         }
     }
 
+
+    get configurations(){
+        return {...this._configurations};
+    }
     get samples() {
         return [].concat(this._samples);
     }

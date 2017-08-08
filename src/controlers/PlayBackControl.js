@@ -13,12 +13,13 @@ export default class PlayBackControl extends EventEmitter {
     canvasPlayer = null;
     controls = null;
     decoder = null;
+    audioDecoder = null;
     currentTime = 0;
     minBuffer = 2;
     pictureBuffer = [];
     _fpsFactor = 0;
 
-    constructor(canvasPlayer, digester, decoder, controls) {
+    constructor(canvasPlayer, digester, decoder, audioDecoder, controls) {
         super();
         assert(canvasPlayer, "Error #2213");
         assert(digester, "Eror #2214");
@@ -28,6 +29,7 @@ export default class PlayBackControl extends EventEmitter {
         this.canvasPlayer = canvasPlayer;
         this.digester = digester;
         this.decoder = decoder;
+        this.audioDecoder = audioDecoder;
         this.controls = controls;
         this._connectEvents();
         this._setBasicInfo();
@@ -66,15 +68,14 @@ export default class PlayBackControl extends EventEmitter {
     };
 
     _displayFrame = () => {
-        const {minBuffer, _decodeSample, pictureBuffer, canvasPlayer} = this;
+        const {minBuffer, _decodeVideoSample, pictureBuffer, canvasPlayer} = this;
         if (pictureBuffer.length < minBuffer) {
-            window.setTimeout(_decodeSample, 0)
+            window.setTimeout(_decodeVideoSample, 0)
         }
         canvasPlayer.renderPicture(pictureBuffer.shift());
     };
 
-    _decodeSample = () => {
-
+    _decodeVideoSample = () => {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
         if (sample) {
@@ -83,23 +84,44 @@ export default class PlayBackControl extends EventEmitter {
             decoder.decode(sample);
             sampleCount++;
         } else {
-            window.setTimeout(()=>{
-                this._decodeSample();
-            },100);
+            window.setTimeout(() => {
+                this._decodeVideoSample();
+            }, 100);
             //alert("no more samples! Average FPS : " + (sampleCount / (((new Date()).getTime() - timer) / 1000)));
         }
     };
 
-    _initDecoder = ({svf}) => {
+    _decodeAudioSample = () => {
+        const {digester, audioDecoder} = this;
+        const sample = digester.shiftAudioSample();
+
+        if (sample) {
+            debugger;
+            audioDecoder.decode(sample)
+        } else {
+            window.setTimeout(() => {
+                this._decodeAudioSample();
+            }, 100);
+        }
+
+    };
+
+    _initVideoDecoder = ({svf}) => {
         const {decoder} = this;
         decoder.configure(svf.sps, svf.pps);
     };
+    _initAudioDecoder = ({svf}) => {
+        const {audioDecoder} = this;
+        audioDecoder.configure(svf.audioConfigurations);
+    };
 
     init() {
-        const {digester, _initDecoder, _decodeSample} = this;
+        const {digester, _initVideoDecoder, _initAudioDecoder, _decodeVideoSample, _decodeAudioSample} = this;
         digester.digestSamples();
-        _initDecoder(digester.headers);
-        _decodeSample();
+        _initVideoDecoder(digester.headers);
+        _initAudioDecoder(digester.headers);
+        _decodeVideoSample();
+        _decodeAudioSample();
         timer = (new Date()).getTime();
 
     }
