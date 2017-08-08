@@ -132,15 +132,13 @@ export default class AudioDecoder extends EventEmitter {
         }
     }
 
-    _readHeader(bitStream) {
-        //https://wiki.multimedia.cx/index.php/ADTS
+    _readHeader(bitStream) { // ADTS header specs --> https://wiki.multimedia.cx/index.php/ADTS
         if (bitStream.read(12) !== 0xfff) {
             throw new Error('Invalid ADTS header.');
         }
-
-        const version = stream.read(1), //MPEG Version: 0 for MPEG-4, 1 for MPEG-2
-            layer = stream.read(2),//Layer: always 0
-            isProtected = !stream.read(1);    //protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC
+        const version = bitStream.read(1),              //MPEG Version: 0 for MPEG-4, 1 for MPEG-2
+            layer = bitStream.read(2),                  //Layer: always 0
+            isProtected = !bitStream.read(1);           //protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC
         this._header = {
             version,
             layer,
@@ -156,7 +154,7 @@ export default class AudioDecoder extends EventEmitter {
             frameLength: bitStream.read(13),            //frame length, this value must include 7 or 9 bytes of header length: FrameLength = (ProtectionAbsent == 1 ? 7 : 9) + size(AACFrame)
             fullness: bitStream.read(11),               //Buffer fullness
             numFrames: bitStream.read(2) + 1,           //Number of AAC frames (RDBs) in ADTS frame minus 1, for maximum compatibility always use 1 AAC frame per ADTS frame
-            CRC: isProtected ? bitStream.read(16) : 0   //RC if protection absent is 0
+            CRC: isProtected ? bitStream.read(16) : 0   //CRC if protection absent is 0
         }
     }
 
