@@ -13,6 +13,27 @@ const SCE_ELEMENT = 0,
     FIL_ELEMENT = 6,
     END_ELEMENT = 7;
 
+const decodeElement = (eType, bitSteam) => {
+    const eId = bitSteam.read(4);
+
+    switch (eType) {
+        case SCE_ELEMENT:
+        case LFE_ELEMENT:
+            break;
+        case CPE_ELEMENT:
+            break;
+        case CCE_ELEMENT:
+            break;
+        case DSE_ELEMENT:
+            break;
+        case FIL_ELEMENT:
+            break;
+        case PCE_ELEMENT:
+            throw new Error("PCE_ELEMENT Not Supported!");
+            break;
+    }
+};
+
 export default class AudioDecoder extends EventEmitter {
     _configuratins = {
         floatingPoint: true,
@@ -47,12 +68,16 @@ export default class AudioDecoder extends EventEmitter {
         if (sampleStream.peek(12) === 0xfff) {
             this._readHeader(sampleStream);
         }
-
-        debugger;
-
+        const elements = [];
+        while (sampleStream.hasData) {
+            const eType = sampleStream.read(3);
+            if (eType === END_ELEMENT) {
+                console.log("END_ELEMENT reached");
+                break;
+            }
+            elements.push(decodeElement(eType, sampleStream));
+        }
     }
-
-
 
     configure(audioConfigurations) {
         this._configurations = {
