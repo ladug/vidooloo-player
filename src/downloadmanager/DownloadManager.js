@@ -102,7 +102,7 @@ export default class DownloadManager extends EventEmitter {
     };
 
     _chunkSuccess = (event) => {
-        this.dispatchEvent(new ChunkDownloadedEvent(event, "DM"));
+        this.dispatchEvent(new ChunkDownloadedEvent(event.payload.response, "DM"));
         this._checkChunkQueue();
     };
 

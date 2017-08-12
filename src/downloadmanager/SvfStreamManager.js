@@ -3,14 +3,13 @@
  */
 import EventEmitter from "../events/EventEmitter";
 import {ChunkDownloadedEvent} from "./DownloadManagerEvents";
-import Stream from "../stream/Stream";
 import {StreamError, StreamSuccess, StreamAbort} from "../stream/StreamEvents";
 import {assert, kb} from "../common";
 
+const SVF_URL = "ws://localhost:3101/";
+
 export default class SvfStreamManager extends EventEmitter {
-    readStream = new Stream({
-        responseType: "arraybuffer"
-    });
+    readStream = new WebSocket(SVF_URL);
     configurations = {
         pvfUid: null,
         type: null,
@@ -27,10 +26,22 @@ export default class SvfStreamManager extends EventEmitter {
             ...this.configurations,
             ...configurations
         };
-        this.readStream.addEventListener(StreamSuccess, this._onChunkSuccess);
-        this.readStream.addEventListener(StreamError, this._onChunkError);
-        this.readStream.addEventListener(StreamAbort, this._onChunkAbort);
+        this.readStream.onmessage = this._onMessage;
+
     }
+
+    _onMessage = (event) => {
+        // console.log(JSON.parse(event.data));
+        const thiz = this;
+        var arrayBuffer;
+        var fileReader = new FileReader();
+        fileReader.onload = function() {
+            arrayBuffer = this.result;
+            thiz.dispatchEvent(new ChunkDownloadedEvent(arrayBuffer));
+        };
+        fileReader.readAsArrayBuffer(event.data);
+
+    };
 
     _onChunkSuccess = (event) => {
         this.configurations.readOffset = event.payload.chunkData.offset + event.payload.chunkData.size;
@@ -46,13 +57,11 @@ export default class SvfStreamManager extends EventEmitter {
     readChunk() {
         const {readStream} = this,
             {readOffset, readSize, src} = this.configurations;
-        readStream.chunkData = {
-            offset: readOffset,
-            size: readSize
-        };
-        readStream.setHeaders({
-            "range": ["bytes=", readOffset, "-", (readOffset + readSize - 1)].join('')
-        });
-        readStream.get(src);
+
+        if (this.readStream.readyState === WebSocket.OPEN) {
+            this.readStream.send(JSON.stringify({file: this.configurations.file}));
+        } else {
+            this.readStream.onopen = () => this.readStream.send(JSON.stringify({file: this.configurations.file}));
+        }
     }
 }

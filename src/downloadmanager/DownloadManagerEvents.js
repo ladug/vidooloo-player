@@ -8,15 +8,15 @@ export class ChunkDownloadedEvent extends Event {
 
     constructor(chunk) {
         super();
-        this._chunk = chunk && chunk.payload || null;
+        this._chunk = chunk || null;
     }
 
-    get chunkData() {
-        return this._chunk.chunkData;
-    }
+    // get chunkData() {
+    //     return this._chunk.chunkData;
+    // }
 
     get chunk() {
-        return this._chunk.response;
+        return this._chunk;
     }
 }
 
