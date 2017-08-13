@@ -21,11 +21,9 @@ const SCE_ELEMENT = 0,
 
 const decodeElement = (eType, bitStream, config) => {
     const eId = bitStream.read(4);
-    debugger;
     switch (eType) {
         case SCE_ELEMENT:
         case LFE_ELEMENT:
-            console.log("SCE_ELEMENT/LFE_ELEMENT", config);
             let ics = new ICStream(config);
             ics.id = eId;
             ics.decode(bitStream, config, false);
@@ -35,7 +33,6 @@ const decodeElement = (eType, bitStream, config) => {
             };
             break;
         case CPE_ELEMENT:
-            console.log("CPE_ELEMENT");
             let cpe = new CPEStream(config);
             cpe.id = id;
             cpe.decode(bitStream, config);
@@ -45,10 +42,8 @@ const decodeElement = (eType, bitStream, config) => {
             };
             break;
         case CCE_ELEMENT:
-            console.log("CCE_ELEMENT");
             let cce = new CCEStream(config);
             cce.decode(bitStream, config);
-
             return {
                 type: eType,
                 stream: cce
@@ -56,21 +51,18 @@ const decodeElement = (eType, bitStream, config) => {
 
             break;
         case DSE_ELEMENT:
-            console.log("DSE_ELEMENT");
             return {
                 type: eType,
                 stream: new DSEStream(bitStream)
             };
             break;
         case FIL_ELEMENT:
-            console.log("FIL_ELEMENT");
             return {
                 type: eType,
                 stream: new FILStream(bitStream, eId)
             };
             break;
         case PCE_ELEMENT:
-            console.log("PCE_ELEMENT");
             throw new Error("PCE_ELEMENT Not Supported!");
             break;
     }

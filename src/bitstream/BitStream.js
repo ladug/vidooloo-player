@@ -45,23 +45,27 @@ export default class BitStream {
 
     align() {
         this.bitPosition = 0;
+        this.bytePosition++;
     }
 
-    _peek(bits, bitPosition) {
-        switch (Math.floor(bits / 8)) {
-            case 0 : // bits < 8
+    _peek(bits) {
+        const {bitPosition} = this,
+            bitOffset = bitPosition + bits - 1;
+
+        switch (Math.floor(bitOffset / 8)) {
+            case 0 : // bits <= 8
                 const u8 = this._peek8();
                 return ((u8 << bitPosition) & 0xff) >>> (8 - bits);
                 break;
-            case 1 : // 8 < bits < 16
+            case 1 : // 8 < bits <= 16
                 const u16 = this._peek16();
                 return ((u16 << bitPosition) & 0xffff) >>> (16 - bits);
                 break;
-            case 2 : // 16 < bits < 24
+            case 2 : // 16 < bits <= 24
                 const u24 = this._peek24();
                 return ((u24 << bitPosition) & 0xffffff) >>> (24 - bits);
                 break;
-            case 3 : // 24 < bits < 32
+            case 3 : // 24 < bits <= 32
                 const u32 = this._peek32();
                 return (u32 << bitPosition) >>> (32 - bits);
                 break;
@@ -71,17 +75,16 @@ export default class BitStream {
     }
 
     peek(bits) {
-        const {bitPosition} = this;
-        return bits
-            ? this._peek(bits, bitPosition)
-            : 0;
+        return bits > 0 ? this._peek(bits) : 0;
     }
 
     read(bits) {
-        const {bitPosition} = this;
-        return bits
-            ? this.advance(bits) && this._peek(bits, bitPosition)
-            : 0;
+        if (bits > 0) {
+            const bitResult = this._peek(bits);
+            this.advance(bits);
+            return bitResult;
+        }
+        return 0;
     }
 
     _peek8() {
