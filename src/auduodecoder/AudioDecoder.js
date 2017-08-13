@@ -34,7 +34,7 @@ const decodeElement = (eType, bitStream, config) => {
             break;
         case CPE_ELEMENT:
             let cpe = new CPEStream(config);
-            cpe.id = id;
+            cpe.id = eId;
             cpe.decode(bitStream, config);
             return {
                 type: eType,
