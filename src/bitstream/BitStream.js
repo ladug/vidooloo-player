@@ -50,7 +50,7 @@ export default class BitStream {
 
     _peek(bits) {
         const {bitPosition} = this,
-            bitOffset = bitPosition + bits - 1;
+            bitOffset = bitPosition + bits - 1; //0-7 bits instead of 1-8
 
         switch (Math.floor(bitOffset / 8)) {
             case 0 : // bits <= 8
@@ -78,7 +78,7 @@ export default class BitStream {
         return bits > 0 ? this._peek(bits) : 0;
     }
 
-    read(bits) {
+    read(bits,signed) {
         if (bits > 0) {
             const bitResult = this._peek(bits);
             this.advance(bits);

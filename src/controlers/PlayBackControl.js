@@ -50,7 +50,7 @@ export default class PlayBackControl extends EventEmitter {
     };
 
     _onPictureReady = (event) => {
-        console.error("_onPictureReady", event);
+        //console.error("_onPictureReady", event);
         const {pictureBuffer, _displayFrame} = this;
         pictureBuffer.push({
             data: event.data,
@@ -79,7 +79,7 @@ export default class PlayBackControl extends EventEmitter {
         const {digester, decoder} = this;
         const sample = digester.shiftVideoSample();
         if (sample) {
-            console.error("sample[", sampleCount, "] sent to decode");
+            //console.error("sample[", sampleCount, "] sent to decode");
             this._updatePlaybackTime(sample.duration);
             decoder.decode(sample);
             sampleCount++;

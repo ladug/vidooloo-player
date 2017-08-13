@@ -158,13 +158,13 @@ export default class DigestControl extends EventEmitter {
     }
 
     _onPvfChunk = (event) => {
-        console.log("_onPvfChunk", event);
+        //console.log("_onPvfChunk", event);
         this._isPvfLoading = false;
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));
     };
 
     _onSvfChunk = (event) => {
-        console.log("_onSvfChunk", event);
+        //console.log("_onSvfChunk", event);
         this._isSvfLoading = false;
         this.dataParser.addSvfChunk(new Uint8Array(event.chunk));
     };
