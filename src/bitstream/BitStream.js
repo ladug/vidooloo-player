@@ -50,7 +50,7 @@ export default class BitStream {
 
     _peek(bits) {
         const {bitPosition} = this,
-            bitOffset = bitPosition + bits - 1; //0-7 bits instead of 1-8
+            bitOffset = bitPosition + bits - 1; //0-31 bits instead of 1-32
 
         switch (Math.floor(bitOffset / 8)) {
             case 0 : // bits <= 8
