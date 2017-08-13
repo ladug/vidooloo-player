@@ -56,6 +56,12 @@ const MAX_SECTIONS = 120,
 const SF_DELTA = 60,
     SF_OFFSET = 200;
 
+// AAC profiles
+const AOT_AAC_MAIN = 1, // no
+    AOT_AAC_LC = 2,   // yes
+    AOT_AAC_LTP = 4,  // no
+    AOT_ESCAPE = 31;
+
 ICStream.prototype = {
     decode: function (stream, config, commonWindow) {
         this.globalGain = stream.read(8);
@@ -318,7 +324,7 @@ ICSInfo.prototype = {
     },
 
     decodePrediction: function (stream, config, commonWindow) {
-        throw new Error('Prediction not implemented.');
+        //throw new Error('Prediction not implemented.');
 
         switch (config.profile) {
             case AOT_AAC_MAIN:
