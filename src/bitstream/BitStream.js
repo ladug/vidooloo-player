@@ -46,8 +46,7 @@ export default class BitStream {
         this.bitPosition = 0;
     }
 
-    _peek(bits) {
-        const {bitPosition} = this;
+    _peek(bits, bitPosition) {
         switch (Math.floor(bits / 8)) {
             case 0 : // bits < 8
                 const u8 = this._peek8();
@@ -71,14 +70,16 @@ export default class BitStream {
     }
 
     peek(bits) {
+        const {bitPosition} = this;
         return bits
-            ? this._peek(bits)
+            ? this._peek(bits, bitPosition)
             : 0;
     }
 
     read(bits) {
+        const {bitPosition} = this;
         return bits
-            ? this.advance(bits) && this._peek(bits)
+            ? this.advance(bits) && this._peek(bits, bitPosition)
             : 0;
     }
 

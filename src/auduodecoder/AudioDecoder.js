@@ -21,9 +21,11 @@ const SCE_ELEMENT = 0,
 
 const decodeElement = (eType, bitStream, config) => {
     const eId = bitStream.read(4);
+    debugger;
     switch (eType) {
         case SCE_ELEMENT:
         case LFE_ELEMENT:
+            console.log("SCE_ELEMENT/LFE_ELEMENT",config);
             let ics = new ICStream(config);
             ics.id = eId;
             ics.decode(bitStream, config, false);
@@ -33,6 +35,7 @@ const decodeElement = (eType, bitStream, config) => {
             };
             break;
         case CPE_ELEMENT:
+            console.log("CPE_ELEMENT");
             let cpe = new CPEStream(config);
             cpe.id = id;
             cpe.decode(bitStream, config);
@@ -42,6 +45,7 @@ const decodeElement = (eType, bitStream, config) => {
             };
             break;
         case CCE_ELEMENT:
+            console.log("CCE_ELEMENT");
             let cce = new CCEStream(config);
             cce.decode(bitStream, config);
 
@@ -52,25 +56,28 @@ const decodeElement = (eType, bitStream, config) => {
 
             break;
         case DSE_ELEMENT:
+            console.log("DSE_ELEMENT");
             return {
                 type: eType,
                 stream: new DSEStream(bitStream)
             };
             break;
         case FIL_ELEMENT:
+            console.log("FIL_ELEMENT");
             return {
                 type: eType,
                 stream: new FILStream(bitStream, eId)
             };
             break;
         case PCE_ELEMENT:
+            console.log("PCE_ELEMENT");
             throw new Error("PCE_ELEMENT Not Supported!");
             break;
     }
 };
 
 export default class AudioDecoder extends EventEmitter {
-    _configuratins = {
+    _configuration = {
         floatingPoint: true,
         CHANNEL_CONFIG_NONE: 0,
         CHANNEL_CONFIG_MONO: 1,
@@ -103,7 +110,15 @@ export default class AudioDecoder extends EventEmitter {
         if (sampleStream.peek(12) === 0xfff) {
             this._readHeader(sampleStream);
         }
-        const elements = [], config = this.configurations;
+        const {channelsPerFrame, sampleRate} = this.configurations,
+            elements = [],
+            config = {
+                chanConfig: channelsPerFrame,
+                frameLength: 1024,
+                profile: 2,
+                sampleIndex: 3, //do i need this?
+                sampleRate: sampleRate
+            };
         while (sampleStream.hasData) {
             const eType = sampleStream.read(3);
             if (eType === END_ELEMENT) {
