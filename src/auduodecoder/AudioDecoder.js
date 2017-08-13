@@ -48,7 +48,6 @@ const decodeElement = (eType, bitStream, config) => {
                 type: eType,
                 stream: cce
             };
-
             break;
         case DSE_ELEMENT:
             return {
@@ -120,8 +119,6 @@ export default class AudioDecoder extends EventEmitter {
             elements.push(decodeElement(eType, sampleStream, config));
         }
         sampleStream.align();
-
-
     }
 
     configure(audioConfigurations) {
@@ -162,7 +159,6 @@ export default class AudioDecoder extends EventEmitter {
             CRC: isProtected ? bitStream.read(16) : 0   //CRC if protection absent is 0
         }
     }
-
 
     get configurations() {
         return {...this._configurations};
