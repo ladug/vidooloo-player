@@ -22,7 +22,8 @@ export default class BitStream {
     }
 
     get hasData() {
-        return this.offset < this.length;
+        const {bytePosition, bitPosition} = this;
+        return (bytePosition + bitPosition) < this.length;
     }
 
     reset() {
@@ -84,8 +85,8 @@ export default class BitStream {
     }
 
     _peek8() {
-        const {offset, bytes} = this;
-        return bytes[offset];
+        const {bytePosition, bytes} = this;
+        return bytes[bytePosition];
     }
 
     _peek16() {

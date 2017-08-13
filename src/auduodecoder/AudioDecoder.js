@@ -25,7 +25,7 @@ const decodeElement = (eType, bitStream, config) => {
     switch (eType) {
         case SCE_ELEMENT:
         case LFE_ELEMENT:
-            console.log("SCE_ELEMENT/LFE_ELEMENT",config);
+            console.log("SCE_ELEMENT/LFE_ELEMENT", config);
             let ics = new ICStream(config);
             ics.id = eId;
             ics.decode(bitStream, config, false);
