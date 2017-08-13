@@ -4,6 +4,12 @@
 import EventEmitter from '../events/EventEmitter';
 import BitStream from "../bitstream/BitStream";
 
+import FILStream from "./streams/FILStream";
+import DSEStream from "./streams/DSEStream";
+import ICStream from "./streams/ICStream";
+import CPEStream from "./streams/CPEStream";
+import CCEStream from "./streams/CCEStream";
+
 const SCE_ELEMENT = 0,
     CPE_ELEMENT = 1,
     CCE_ELEMENT = 2,
@@ -13,20 +19,49 @@ const SCE_ELEMENT = 0,
     FIL_ELEMENT = 6,
     END_ELEMENT = 7;
 
-const decodeElement = (eType, bitSteam) => {
-    const eId = bitSteam.read(4);
-
+const decodeElement = (eType, bitStream, config) => {
+    const eId = bitStream.read(4);
     switch (eType) {
         case SCE_ELEMENT:
         case LFE_ELEMENT:
+            let ics = new ICStream(config);
+            ics.id = eId;
+            ics.decode(bitStream, config, false);
+            return {
+                type: eType,
+                stream: ics
+            };
             break;
         case CPE_ELEMENT:
+            let cpe = new CPEStream(config);
+            cpe.id = id;
+            cpe.decode(bitStream, config);
+            return {
+                type: eType,
+                stream: cpe
+            };
             break;
         case CCE_ELEMENT:
+            let cce = new CCEStream(config);
+            cce.decode(bitStream, config);
+
+            return {
+                type: eType,
+                stream: cce
+            };
+
             break;
         case DSE_ELEMENT:
+            return {
+                type: eType,
+                stream: new DSEStream(bitStream)
+            };
             break;
         case FIL_ELEMENT:
+            return {
+                type: eType,
+                stream: new FILStream(bitStream, eId)
+            };
             break;
         case PCE_ELEMENT:
             throw new Error("PCE_ELEMENT Not Supported!");
@@ -68,15 +103,18 @@ export default class AudioDecoder extends EventEmitter {
         if (sampleStream.peek(12) === 0xfff) {
             this._readHeader(sampleStream);
         }
-        const elements = [];
+        const elements = [], config = this.configurations;
         while (sampleStream.hasData) {
             const eType = sampleStream.read(3);
             if (eType === END_ELEMENT) {
                 console.log("END_ELEMENT reached");
                 break;
             }
-            elements.push(decodeElement(eType, sampleStream));
+            elements.push(decodeElement(eType, sampleStream, config));
         }
+        sampleStream.align();
+
+
     }
 
     configure(audioConfigurations) {
