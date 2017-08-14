@@ -17,124 +17,129 @@ const SCE_ELEMENT = 0,
     DSE_ELEMENT = 4,
     PCE_ELEMENT = 5,
     FIL_ELEMENT = 6,
-    END_ELEMENT = 7;
+    END_ELEMENT = 7,
+    ICS_STREAM = 1,
+    CPE_STREAM = 2,
+    CCE_STREAM = 3,
+    DSE_STREAM = 4,
+    FIL_STREAM = 5;
 
 const decodeElement = (eType, bitStream, config) => {
-    const eId = bitStream.read(4);
-    switch (eType) {
-        case SCE_ELEMENT:
-        case LFE_ELEMENT:
-            let ics = new ICStream(config);
-            ics.id = eId;
-            ics.decode(bitStream, config, false);
-            return {
-                type: eType,
-                stream: ics
-            };
-            break;
-        case CPE_ELEMENT:
-            let cpe = new CPEStream(config);
-            cpe.id = eId;
-            cpe.decode(bitStream, config);
-            return {
-                type: eType,
-                stream: cpe
-            };
-            break;
-        case CCE_ELEMENT:
-            let cce = new CCEStream(config);
-            cce.decode(bitStream, config);
-            return {
-                type: eType,
-                stream: cce
-            };
-            break;
-        case DSE_ELEMENT:
-            return {
-                type: eType,
-                stream: new DSEStream(bitStream)
-            };
-            break;
-        case FIL_ELEMENT:
-            return {
-                type: eType,
-                stream: new FILStream(bitStream, eId)
-            };
-            break;
-        case PCE_ELEMENT:
-            throw new Error("PCE_ELEMENT Not Supported!");
-            break;
-    }
-},
-// Intensity stereo
-processIS=(element, left, right) =>{
-    var ics = element.right,
-        info = ics.info,
-        offsets = info.swbOffsets,
-        windowGroups = info.groupCount,
-        maxSFB = info.maxSFB,
-        bandTypes = ics.bandTypes,
-        sectEnd = ics.sectEnd,
-        scaleFactors = ics.scaleFactors;
+        const eId = bitStream.read(4);
+        switch (eType) {
+            case SCE_ELEMENT:
+            case LFE_ELEMENT:
+                let ics = new ICStream(config);
+                ics.id = eId;
+                ics.decode(bitStream, config, false);
+                return {
+                    type: ICS_STREAM,
+                    stream: ics
+                };
+                break;
+            case CPE_ELEMENT:
+                let cpe = new CPEStream(config);
+                cpe.id = eId;
+                cpe.decode(bitStream, config);
+                return {
+                    type: CPE_STREAM,
+                    stream: cpe
+                };
+                break;
+            case CCE_ELEMENT:
+                let cce = new CCEStream(config);
+                cce.decode(bitStream, config);
+                return {
+                    type: CCE_STREAM,
+                    stream: cce
+                };
+                break;
+            case DSE_ELEMENT:
+                return {
+                    type: DSE_STREAM,
+                    stream: new DSEStream(bitStream)
+                };
+                break;
+            case FIL_ELEMENT:
+                return {
+                    type: FIL_STREAM,
+                    stream: new FILStream(bitStream, eId)
+                };
+                break;
+            case PCE_ELEMENT:
+                throw new Error("PCE_ELEMENT Not Supported!");
+                break;
+        }
+    },
+    // Intensity stereo
+    processIS = (element, left, right) => {
+        var ics = element.right,
+            info = ics.info,
+            offsets = info.swbOffsets,
+            windowGroups = info.groupCount,
+            maxSFB = info.maxSFB,
+            bandTypes = ics.bandTypes,
+            sectEnd = ics.sectEnd,
+            scaleFactors = ics.scaleFactors;
 
-    var idx = 0, groupOff = 0;
-    for (var g = 0; g < windowGroups; g++) {
-        for (var i = 0; i < maxSFB;) {
-            var end = sectEnd[idx];
+        var idx = 0, groupOff = 0;
+        for (var g = 0; g < windowGroups; g++) {
+            for (var i = 0; i < maxSFB;) {
+                var end = sectEnd[idx];
 
-            if (bandTypes[idx] === ICStream.INTENSITY_BT || bandTypes[idx] === ICStream.INTENSITY_BT2) {
-                for (; i < end; i++, idx++) {
-                    var c = bandTypes[idx] === ICStream.INTENSITY_BT ? 1 : -1;
-                    if (element.maskPresent)
-                        c *= element.ms_used[idx] ? -1 : 1;
+                if (bandTypes[idx] === ICStream.INTENSITY_BT || bandTypes[idx] === ICStream.INTENSITY_BT2) {
+                    for (; i < end; i++, idx++) {
+                        var c = bandTypes[idx] === ICStream.INTENSITY_BT ? 1 : -1;
+                        if (element.maskPresent)
+                            c *= element.ms_used[idx] ? -1 : 1;
 
-                    var scale = c * scaleFactors[idx];
-                    for (var w = 0; w < info.groupLength[g]; w++) {
-                        var off = groupOff + w * 128 + offsets[i],
-                            len = offsets[i + 1] - offsets[i];
+                        var scale = c * scaleFactors[idx];
+                        for (var w = 0; w < info.groupLength[g]; w++) {
+                            var off = groupOff + w * 128 + offsets[i],
+                                len = offsets[i + 1] - offsets[i];
 
-                        for (var j = 0; j < len; j++) {
-                            right[off + j] = left[off + j] * scale;
+                            for (var j = 0; j < len; j++) {
+                                right[off + j] = left[off + j] * scale;
+                            }
+                        }
+                    }
+                } else {
+                    idx += end - i;
+                    i = end;
+                }
+            }
+
+            groupOff += info.groupLength[g] * 128;
+        }
+    },
+
+    // Mid-side stereo
+    processMS = (element, left, right) => {
+        const ics = element.left,
+            info = ics.info,
+            offsets = info.swbOffsets,
+            windowGroups = info.groupCount,
+            maxSFB = info.maxSFB,
+            sfbCBl = ics.bandTypes,
+            sfbCBr = element.right.bandTypes;
+
+        let groupOff = 0, idx = 0;
+        for (let g = 0; g < windowGroups; g++) {
+            for (let i = 0; i < maxSFB; i++, idx++) {
+                if (element.ms_used[idx] && sfbCBl[idx] < ICStream.NOISE_BT && sfbCBr[idx] < ICStream.NOISE_BT) {
+                    for (let w = 0; w < info.groupLength[g]; w++) {
+                        const off = groupOff + w * 128 + offsets[i];
+                        for (let j = 0; j < offsets[i + 1] - offsets[i]; j++) {
+                            const t = left[off + j] - right[off + j];
+                            left[off + j] += right[off + j];
+                            right[off + j] = t;
                         }
                     }
                 }
-            } else {
-                idx += end - i;
-                i = end;
             }
+            groupOff += info.groupLength[g] * 128;
         }
-
-        groupOff += info.groupLength[g] * 128;
-    }
-},
-
-// Mid-side stereo
-processMS=(element, left, right) =>{
-    var ics = element.left,
-        info = ics.info,
-        offsets = info.swbOffsets,
-        windowGroups = info.groupCount,
-        maxSFB = info.maxSFB,
-        sfbCBl = ics.bandTypes,
-        sfbCBr = element.right.bandTypes;
-
-    var groupOff = 0, idx = 0;
-    for (var g = 0; g < windowGroups; g++) {
-        for (var i = 0; i < maxSFB; i++, idx++) {
-            if (element.ms_used[idx] && sfbCBl[idx] < ICStream.NOISE_BT && sfbCBr[idx] < ICStream.NOISE_BT) {
-                for (var w = 0; w < info.groupLength[g]; w++) {
-                    var off = groupOff + w * 128 + offsets[i];
-                    for (var j = 0; j < offsets[i + 1] - offsets[i]; j++) {
-                        var t = left[off + j] - right[off + j];
-                        left[off + j] += right[off + j];
-                        right[off + j] = t;
-                    }
-                }
-            }
-        }
-        groupOff += info.groupLength[g] * 128;
-    }
-};
+    };
 
 export default class AudioDecoder extends EventEmitter {
     _configuration = {
@@ -188,18 +193,32 @@ export default class AudioDecoder extends EventEmitter {
             elements.push(decodeElement(eType, sampleStream, config));
         }
         sampleStream.align();
+
+        this._process(elements)
     }
 
     _process(elements) {
         const {channels, frameLength} = this._configurations,
             data = new Array(channels).fill().map(() => new Float32Array(frameLength));
 
+        /*
+
+         ICS_STREAM = 1,
+         CPE_STREAM = 2,
+         CCE_STREAM = 3,
+         DSE_STREAM = 4,
+         FIL_STREAM = 5;
+
+        */
+        elements.forEach((element) => {
+
+        });
         /* {
          type: eType,
          stream: new DSEStream(bitStream)
          };*/
 
-        debugger
+
         let channel = 0;
         for (let i = 0; i < elements.length && channel < channels; i++) {
             let e = elements[i];
@@ -313,7 +332,6 @@ export default class AudioDecoder extends EventEmitter {
         if (this.sbrPresent)
             throw new Error("SBR not implemented");
     };
-
 
 
     applyChannelCoupling(element, couplingPoint, data1, data2) {
