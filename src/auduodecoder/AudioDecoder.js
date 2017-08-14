@@ -199,7 +199,8 @@ export default class AudioDecoder extends EventEmitter {
 
     _process(elements) {
         const {channels, frameLength} = this._configurations,
-            data = new Array(channels).fill().map(() => new Float32Array(frameLength));
+            data = new Array(channels).fill().map(() => new Float32Array(frameLength)),
+            output = new Float32Array(frameLength * channels);
 
         /*
 
@@ -209,34 +210,31 @@ export default class AudioDecoder extends EventEmitter {
          DSE_STREAM = 4,
          FIL_STREAM = 5;
 
-        */
-        elements.forEach((element) => {
+         */
+        elements.reduce((channel, {type, stream}) => {
+            switch (type) {
+                case ICS_STREAM:
+                    this.processSingle(stream, channel);
+                    channel += 1;
+                    break;
+                case CPE_STREAM:
+                    this.processPair(stream, channel);
+                    channel += 2;
+                    break;
+                case CCE_STREAM:
+                    channel++;
+                    break;
+                case DSE_STREAM: //ignored
+                case FIL_STREAM: //ignored
+                    break;
+                default:
+                    throw new Error("Unknown element found.")
 
-        });
-        /* {
-         type: eType,
-         stream: new DSEStream(bitStream)
-         };*/
-
-
-        let channel = 0;
-        for (let i = 0; i < elements.length && channel < channels; i++) {
-            let e = elements[i];
-            if (e instanceof ICStream) { // SCE or LFE element
-                channel += this.processSingle(e, channel);
-            } else if (e instanceof CPEStream) {
-                this.processPair(e, channel);
-                channel += 2;
-            } else if (e instanceof CCEStream) {
-                channel++;
-            } else {
-                throw new Error("Unknown element found.")
             }
-        }
+            return channel;
+        }, 0);
 
-
-        let output = new Float32Array(frameLength * channels),
-            j = 0;
+        let j = 0;
 
         for (let k = 0; k < frameLength; k++) {
             for (let i = 0; i < channels; i++) {
