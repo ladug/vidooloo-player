@@ -3,7 +3,7 @@
  */
 import EventEmitter from '../events/EventEmitter';
 import BitStream from "../bitstream/BitStream";
-
+import FilterBank from "./helpers/FilterBank";
 import FILStream from "./streams/FILStream";
 import DSEStream from "./streams/DSEStream";
 import ICStream from "./streams/ICStream";
@@ -65,6 +65,75 @@ const decodeElement = (eType, bitStream, config) => {
             throw new Error("PCE_ELEMENT Not Supported!");
             break;
     }
+},
+// Intensity stereo
+processIS=(element, left, right) =>{
+    var ics = element.right,
+        info = ics.info,
+        offsets = info.swbOffsets,
+        windowGroups = info.groupCount,
+        maxSFB = info.maxSFB,
+        bandTypes = ics.bandTypes,
+        sectEnd = ics.sectEnd,
+        scaleFactors = ics.scaleFactors;
+
+    var idx = 0, groupOff = 0;
+    for (var g = 0; g < windowGroups; g++) {
+        for (var i = 0; i < maxSFB;) {
+            var end = sectEnd[idx];
+
+            if (bandTypes[idx] === ICStream.INTENSITY_BT || bandTypes[idx] === ICStream.INTENSITY_BT2) {
+                for (; i < end; i++, idx++) {
+                    var c = bandTypes[idx] === ICStream.INTENSITY_BT ? 1 : -1;
+                    if (element.maskPresent)
+                        c *= element.ms_used[idx] ? -1 : 1;
+
+                    var scale = c * scaleFactors[idx];
+                    for (var w = 0; w < info.groupLength[g]; w++) {
+                        var off = groupOff + w * 128 + offsets[i],
+                            len = offsets[i + 1] - offsets[i];
+
+                        for (var j = 0; j < len; j++) {
+                            right[off + j] = left[off + j] * scale;
+                        }
+                    }
+                }
+            } else {
+                idx += end - i;
+                i = end;
+            }
+        }
+
+        groupOff += info.groupLength[g] * 128;
+    }
+},
+
+// Mid-side stereo
+processMS=(element, left, right) =>{
+    var ics = element.left,
+        info = ics.info,
+        offsets = info.swbOffsets,
+        windowGroups = info.groupCount,
+        maxSFB = info.maxSFB,
+        sfbCBl = ics.bandTypes,
+        sfbCBr = element.right.bandTypes;
+
+    var groupOff = 0, idx = 0;
+    for (var g = 0; g < windowGroups; g++) {
+        for (var i = 0; i < maxSFB; i++, idx++) {
+            if (element.ms_used[idx] && sfbCBl[idx] < ICStream.NOISE_BT && sfbCBr[idx] < ICStream.NOISE_BT) {
+                for (var w = 0; w < info.groupLength[g]; w++) {
+                    var off = groupOff + w * 128 + offsets[i];
+                    for (var j = 0; j < offsets[i + 1] - offsets[i]; j++) {
+                        var t = left[off + j] - right[off + j];
+                        left[off + j] += right[off + j];
+                        right[off + j] = t;
+                    }
+                }
+            }
+        }
+        groupOff += info.groupLength[g] * 128;
+    }
 };
 
 export default class AudioDecoder extends EventEmitter {
@@ -92,7 +161,7 @@ export default class AudioDecoder extends EventEmitter {
     _configurations = {
         sampleRate: 0,
         bitsPerChannel: 16,
-        channelsPerFrame: 2,
+        channels: 2,
         floatingPoint: true
     };
 
@@ -101,10 +170,10 @@ export default class AudioDecoder extends EventEmitter {
         if (sampleStream.peek(12) === 0xfff) {
             this._readHeader(sampleStream);
         }
-        const {channelsPerFrame, sampleRate} = this.configurations,
+        const {channels, sampleRate} = this.configurations,
             elements = [],
             config = {
-                chanConfig: channelsPerFrame,
+                chanConfig: channels,
                 frameLength: 1024,
                 profile: 2,
                 sampleIndex: 3, //do i need this?
@@ -121,17 +190,173 @@ export default class AudioDecoder extends EventEmitter {
         sampleStream.align();
     }
 
+    _process(elements) {
+        const {channels, frameLength} = this._configurations,
+            data = new Array(channels).fill().map(() => new Float32Array(frameLength));
+
+        /* {
+         type: eType,
+         stream: new DSEStream(bitStream)
+         };*/
+
+        debugger
+        let channel = 0;
+        for (let i = 0; i < elements.length && channel < channels; i++) {
+            let e = elements[i];
+            if (e instanceof ICStream) { // SCE or LFE element
+                channel += this.processSingle(e, channel);
+            } else if (e instanceof CPEStream) {
+                this.processPair(e, channel);
+                channel += 2;
+            } else if (e instanceof CCEStream) {
+                channel++;
+            } else {
+                throw new Error("Unknown element found.")
+            }
+        }
+
+
+        let output = new Float32Array(frameLength * channels),
+            j = 0;
+
+        for (let k = 0; k < frameLength; k++) {
+            for (let i = 0; i < channels; i++) {
+                output[j++] = data[i][k] / 32768;
+            }
+        }
+
+        return output;
+    }
+
+    processSingle(element, channel) {
+        var profile = this.config.profile,
+            info = element.info,
+            data = element.data;
+
+        if (profile === AOT_AAC_MAIN)
+            throw new Error("Main prediction unimplemented");
+
+        if (profile === AOT_AAC_LTP)
+            throw new Error("LTP prediction unimplemented");
+
+        this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, data, null);
+
+        if (element.tnsPresent)
+            element.tns.process(element, data, false);
+
+        this.applyChannelCoupling(element, CCEElement.AFTER_TNS, data, null);
+
+        // filterbank
+        this.filter_bank.process(info, data, this.data[channel], channel);
+
+        if (profile === AOT_AAC_LTP)
+            throw new Error("LTP prediction unimplemented");
+
+        this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], null);
+
+        if (element.gainPresent)
+            throw new Error("Gain control not implemented");
+
+        if (this.sbrPresent)
+            throw new Error("SBR not implemented");
+
+        return 1;
+    };
+
+    processPair(element, channel) {
+        var profile = this.config.profile,
+            left = element.left,
+            right = element.right,
+            l_info = left.info,
+            r_info = right.info,
+            l_data = left.data,
+            r_data = right.data;
+
+        // Mid-side stereo
+        if (element.commonWindow && element.maskPresent)
+            this.processMS(element, l_data, r_data);
+
+        if (profile === AOT_AAC_MAIN)
+            throw new Error("Main prediction unimplemented");
+
+        // Intensity stereo
+        this.processIS(element, l_data, r_data);
+
+        if (profile === AOT_AAC_LTP)
+            throw new Error("LTP prediction unimplemented");
+
+        this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, l_data, r_data);
+
+        if (left.tnsPresent)
+            left.tns.process(left, l_data, false);
+
+        if (right.tnsPresent)
+            right.tns.process(right, r_data, false);
+
+        this.applyChannelCoupling(element, CCEElement.AFTER_TNS, l_data, r_data);
+
+        // filterbank
+        this.filter_bank.process(l_info, l_data, this.data[channel], channel);
+        this.filter_bank.process(r_info, r_data, this.data[channel + 1], channel + 1);
+
+        if (profile === AOT_AAC_LTP)
+            throw new Error("LTP prediction unimplemented");
+
+        this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], this.data[channel + 1]);
+
+        if (left.gainPresent)
+            throw new Error("Gain control not implemented");
+
+        if (right.gainPresent)
+            throw new Error("Gain control not implemented");
+
+        if (this.sbrPresent)
+            throw new Error("SBR not implemented");
+    };
+
+
+
+    applyChannelCoupling(element, couplingPoint, data1, data2) {
+        var cces = this.cces,
+            isChannelPair = element instanceof CPEElement,
+            applyCoupling = couplingPoint === CCEElement.AFTER_IMDCT ? 'applyIndependentCoupling' : 'applyDependentCoupling';
+
+        for (var i = 0; i < cces.length; i++) {
+            var cce = cces[i],
+                index = 0;
+
+            if (cce.couplingPoint === couplingPoint) {
+                for (var c = 0; c < cce.coupledCount; c++) {
+                    var chSelect = cce.chSelect[c];
+                    if (cce.channelPair[c] === isChannelPair && cce.idSelect[c] === element.id) {
+                        if (chSelect !== 1) {
+                            cce[applyCoupling](index, data1);
+                            if (chSelect) index++;
+                        }
+
+                        if (chSelect !== 2)
+                            cce[applyCoupling](index++, data2);
+
+                    } else {
+                        index += 1 + (chSelect === 3 ? 1 : 0);
+                    }
+                }
+            }
+        }
+    };
+
     configure(audioConfigurations) {
         this._configurations = {
             adcd: audioConfigurations.adcd,
             sampleRate: audioConfigurations.sampleRate,
-            channelsPerFrame: audioConfigurations.channels,
+            channels: audioConfigurations.channels,
             bitsPerChannel: audioConfigurations.sampleSize,
             compressionId: audioConfigurations.compressionId,
             timeScale: audioConfigurations.timeScale,
             duration: audioConfigurations.duration,
             packetSize: audioConfigurations.packetSize
-        }
+        };
+        this.filter_bank = new FilterBank(null, audioConfigurations.channels)
     }
 
     _readHeader(bitStream) { // ADTS header specs --> https://wiki.multimedia.cx/index.php/ADTS

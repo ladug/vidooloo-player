@@ -114,8 +114,11 @@ ICStream.prototype = {
 
                 end += incr;
 
-                if (end > maxSFB)
-                    throw new Error("Too many bands (" + end + " > " + maxSFB + ")");
+                if (end > maxSFB) {
+                    console.error("Too many bands (" + end + " > " + maxSFB + ")");
+                    //throw new Error("Too many bands (" + end + " > " + maxSFB + ")");
+                    //originally throws error and disrupts the playback stream - but will this work?!
+                }
 
                 for (; k < end; k++) {
                     bandTypes[idx] = bandType;
