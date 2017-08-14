@@ -32,8 +32,9 @@ export default class SvfStreamManager extends EventEmitter {
     }
 
     _onMessage = (event) => {
+        const {dispatchEvent} = this;
         const fileReader = new FileReader()
-        fileReader.addEventListener("load", () => this.dispatchEvent(new ChunkDownloadedEvent(fileReader.result)));
+        fileReader.addEventListener("load", () => dispatchEvent(new ChunkDownloadedEvent(fileReader.result)));
         fileReader.readAsArrayBuffer(event.data);
     };
 
@@ -53,7 +54,7 @@ export default class SvfStreamManager extends EventEmitter {
         if (readStream.readyState === WebSocket.OPEN) {
             readStream.send(data);
         } else {
-            readStream.addEventListener("open", () => this.readStream.send(data));
+            readStream.addEventListener("open", () => readStream.send(data));
         }
     }
 }
