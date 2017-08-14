@@ -31,16 +31,14 @@ export default class SvfStreamManager extends EventEmitter {
     }
 
     _onMessage = (event) => {
-        // console.log(JSON.parse(event.data));
         const thiz = this;
         var arrayBuffer;
         var fileReader = new FileReader();
-        fileReader.onload = function() {
+        fileReader.onload = function () {
             arrayBuffer = this.result;
             thiz.dispatchEvent(new ChunkDownloadedEvent(arrayBuffer));
         };
         fileReader.readAsArrayBuffer(event.data);
-
     };
 
     _onChunkSuccess = (event) => {
@@ -55,13 +53,18 @@ export default class SvfStreamManager extends EventEmitter {
     };
 
     readChunk() {
-        const {readStream} = this,
-            {readOffset, readSize, src} = this.configurations;
+        const {readStream, configurations} = this,
+            {file, readSize} = configurations;
 
-        if (this.readStream.readyState === WebSocket.OPEN) {
-            this.readStream.send(JSON.stringify({file: this.configurations.file}));
+        const data = JSON.stringify({
+            file: file,
+            portion: readSize,
+        })
+
+        if (readStream.readyState === WebSocket.OPEN) {
+            readStream.send(data);
         } else {
-            this.readStream.onopen = () => this.readStream.send(JSON.stringify({file: this.configurations.file}));
+            readStream.onopen = () => this.readStream.send(data);
         }
     }
 }
