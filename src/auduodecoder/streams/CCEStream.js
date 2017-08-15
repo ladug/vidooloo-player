@@ -21,8 +21,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-var ICStream = require('./ICStream');
-var Huffman = require('../helpers/huffman');
+import ICStream from'./ICStream';
+import Huffman  from'../helpers/huffman';
 
 // Channel Coupling Element
 function CCEElement(config) {
@@ -45,7 +45,7 @@ const CCE_SCALE = new Float32Array([
 ]);
 
 CCEElement.prototype = {
-    decode: function(stream, config) {
+    decode: function (stream, config) {
         var channelPair = this.channelPair,
             idSelect = this.idSelect,
             chSelect = this.chSelect;
@@ -121,7 +121,7 @@ CCEElement.prototype = {
         }
     },
 
-    applyIndependentCoupling: function(index, data) {
+    applyIndependentCoupling: function (index, data) {
         var gain = this.gain[index][0],
             iqData = this.ics.data;
 
@@ -130,7 +130,7 @@ CCEElement.prototype = {
         }
     },
 
-    applyDependentCoupling: function(index, data) {
+    applyDependentCoupling: function (index, data) {
         var info = this.ics.info,
             swbOffsets = info.swbOffsets,
             groupCount = info.groupCount,

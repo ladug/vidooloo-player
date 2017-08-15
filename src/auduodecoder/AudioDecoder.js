@@ -10,7 +10,7 @@ import ICStream from "./streams/ICStream";
 import CPEStream from "./streams/CPEStream";
 import CCEStream from "./streams/CCEStream";
 
-const SCE_ELEMENT = 0,
+export const SCE_ELEMENT = 0,
     CPE_ELEMENT = 1,
     CCE_ELEMENT = 2,
     LFE_ELEMENT = 3,
@@ -22,13 +22,20 @@ const SCE_ELEMENT = 0,
     CPE_STREAM = 2,
     CCE_STREAM = 3,
     DSE_STREAM = 4,
-    FIL_STREAM = 5;
+    FIL_STREAM = 5,
+    AOT_AAC_MAIN = 1, // no
+    AOT_AAC_LC = 2,   // yes
+    AOT_AAC_LTP = 4,  // no
+    AOT_ESCAPE = 31,
+    BEFORE_TNS = 0,
+    AFTER_TNS = 1,
+    AFTER_IMDCT = 2;
 
 const decodeElement = (eType, bitStream, config) => {
         const eId = bitStream.read(4);
         switch (eType) {
             case SCE_ELEMENT:
-            case LFE_ELEMENT:
+            case LFE_ELEMENT: // single channel and low frequency elements
                 let ics = new ICStream(config);
                 ics.id = eId;
                 ics.decode(bitStream, config, false);
@@ -37,7 +44,7 @@ const decodeElement = (eType, bitStream, config) => {
                     stream: ics
                 };
                 break;
-            case CPE_ELEMENT:
+            case CPE_ELEMENT: // channel pair element
                 let cpe = new CPEStream(config);
                 cpe.id = eId;
                 cpe.decode(bitStream, config);
@@ -46,7 +53,7 @@ const decodeElement = (eType, bitStream, config) => {
                     stream: cpe
                 };
                 break;
-            case CCE_ELEMENT:
+            case CCE_ELEMENT: // channel coupling element
                 let cce = new CCEStream(config);
                 cce.decode(bitStream, config);
                 return {
@@ -54,25 +61,25 @@ const decodeElement = (eType, bitStream, config) => {
                     stream: cce
                 };
                 break;
-            case DSE_ELEMENT:
+            case DSE_ELEMENT:  // data-stream element
                 return {
                     type: DSE_STREAM,
                     stream: new DSEStream(bitStream)
                 };
                 break;
-            case FIL_ELEMENT:
+            case FIL_ELEMENT: // filler element
                 return {
                     type: FIL_STREAM,
                     stream: new FILStream(bitStream, eId)
                 };
                 break;
-            case PCE_ELEMENT:
+            case PCE_ELEMENT: // program configuration element
                 throw new Error("PCE_ELEMENT Not Supported!");
                 break;
         }
     },
     // Intensity stereo
-    processIS = (element, left, right) => {
+    processIntensityStereo = (element, left, right) => {
         var ics = element.right,
             info = ics.info,
             offsets = info.swbOffsets,
@@ -139,78 +146,74 @@ const decodeElement = (eType, bitStream, config) => {
             }
             groupOff += info.groupLength[g] * 128;
         }
-    };
-
-export default class AudioDecoder extends EventEmitter {
-    _configuration = {
-        floatingPoint: true,
-        CHANNEL_CONFIG_NONE: 0,
-        CHANNEL_CONFIG_MONO: 1,
-        CHANNEL_CONFIG_STEREO: 2,
-        CHANNEL_CONFIG_STEREO_PLUS_CENTER: 3,
-        CHANNEL_CONFIG_STEREO_PLUS_CENTER_PLUS_REAR_MONO: 4,
-        CHANNEL_CONFIG_FIVE: 5,
-        CHANNEL_CONFIG_FIVE_PLUS_ONE: 6,
-        CHANNEL_CONFIG_SEVEN_PLUS_ONE: 8,
-
-        profiles: {
-            AOT_AAC_MAIN: 1, // no
-            AOT_AAC_LC: 2,   // yes
-            AOT_AAC_LTP: 4,  // no
-            AOT_ESCAPE: 31
+    },
+    isSupported = (profile) => {
+        switch (profile) {
+            case AOT_AAC_MAIN:
+                throw new Error("Main prediction unimplemented");
+                break;
+            case AOT_AAC_LTP:
+                throw new Error("LTP prediction unimplemented");
+                break;
         }
-    };
 
+    };
+export default class AudioDecoder extends EventEmitter {
+    _filterBank;
     _header = {};
     _samples = [];
-    _configurations = {
-        sampleRate: 0,
-        bitsPerChannel: 16,
-        channels: 2,
-        floatingPoint: true
+    _audioConfig = {
+        chanConfig: 2,
+        frameLength: 1024,
+        profile: 2,
+        sampleIndex: 3,
+        sampleRate: 48000
     };
 
+    configure(audioConfigurations) {
+        isSupported(audioConfigurations.profile || 2);              //TODO make sure profile is passed
+        this._audioConfig = {
+            channels: audioConfigurations.channels,
+            chanConfig: audioConfigurations.channels,
+            frameLength: audioConfigurations.frameLength || 1024,   //TODO make sure frameLength is passed
+            profile: audioConfigurations.profile || 2,              //TODO make sure profile is passed
+            sampleIndex: audioConfigurations.sampleIndex || 3,      //TODO make sure sampleIndex is passed
+            sampleRate: audioConfigurations.timeScale
+        };
+        this._filterBank = new FilterBank(null, audioConfigurations.channels);
+    }
+
     decode(sample) {
-        const sampleStream = new BitStream(sample.sampleData);
+        const elements = [],
+            couplingElements = [],
+            config = this._audioConfig,
+            sampleStream = new BitStream(sample.sampleData);
         if (sampleStream.peek(12) === 0xfff) {
             this._readHeader(sampleStream);
         }
-        const {channels, sampleRate} = this.configurations,
-            elements = [],
-            config = {
-                chanConfig: channels,
-                frameLength: 1024,
-                profile: 2,
-                sampleIndex: 3, //do i need this?
-                sampleRate: sampleRate
-            };
         while (sampleStream.hasData) {
             const eType = sampleStream.read(3);
             if (eType === END_ELEMENT) {
                 console.log("END_ELEMENT reached");
                 break;
             }
-            elements.push(decodeElement(eType, sampleStream, config));
+            const element = decodeElement(eType, sampleStream, config);
+            if ([ICS_STREAM, CPE_STREAM, CCE_STREAM].indexOf(element.type) > -1) {
+                elements.push(element);
+                if (element.type === CCE_STREAM) {
+                    couplingElements.push(element);
+                }
+            }
         }
         sampleStream.align();
-
         this._process(elements)
     }
 
     _process(elements) {
-        const {channels, frameLength} = this._configurations,
+        const {channels, frameLength} = this._audioConfig,
             data = new Array(channels).fill().map(() => new Float32Array(frameLength)),
             output = new Float32Array(frameLength * channels);
 
-        /*
-
-         ICS_STREAM = 1,
-         CPE_STREAM = 2,
-         CCE_STREAM = 3,
-         DSE_STREAM = 4,
-         FIL_STREAM = 5;
-
-         */
         elements.reduce((channel, {type, stream}) => {
             switch (type) {
                 case ICS_STREAM:
@@ -224,18 +227,16 @@ export default class AudioDecoder extends EventEmitter {
                 case CCE_STREAM:
                     channel++;
                     break;
-                case DSE_STREAM: //ignored
-                case FIL_STREAM: //ignored
+                case DSE_STREAM: //ignored for now
+                case FIL_STREAM: //ignored for now
                     break;
                 default:
                     throw new Error("Unknown element found.")
-
             }
             return channel;
         }, 0);
 
         let j = 0;
-
         for (let k = 0; k < frameLength; k++) {
             for (let i = 0; i < channels; i++) {
                 output[j++] = data[i][k] / 32768;
@@ -245,92 +246,42 @@ export default class AudioDecoder extends EventEmitter {
         return output;
     }
 
+
     processSingle(element, channel) {
-        var profile = this.config.profile,
-            info = element.info,
-            data = element.data;
+        const {profile} = this._audioConfig,
+            {info, data, tnsPresent} = element;
 
-        if (profile === AOT_AAC_MAIN)
-            throw new Error("Main prediction unimplemented");
-
-        if (profile === AOT_AAC_LTP)
-            throw new Error("LTP prediction unimplemented");
-
-        this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, data, null);
-
-        if (element.tnsPresent)
-            element.tns.process(element, data, false);
-
-        this.applyChannelCoupling(element, CCEElement.AFTER_TNS, data, null);
-
-        // filterbank
-        this.filter_bank.process(info, data, this.data[channel], channel);
-
-        if (profile === AOT_AAC_LTP)
-            throw new Error("LTP prediction unimplemented");
-
-        this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], null);
-
-        if (element.gainPresent)
+        if (element.gainPresent) {
             throw new Error("Gain control not implemented");
+        }
 
-        if (this.sbrPresent)
-            throw new Error("SBR not implemented");
-
+        this.applyChannelCoupling(element, BEFORE_TNS, data, null);
+        tnsPresent && element.tns.process(element, data, false);
+        this.applyChannelCoupling(element, AFTER_TNS, data, null);
+        this._filterBank.process(info, data, this.data[channel], channel);
+        this.applyChannelCoupling(element, AFTER_IMDCT, this.data[channel], null);
         return 1;
     };
 
     processPair(element, channel) {
-        var profile = this.config.profile,
-            left = element.left,
-            right = element.right,
-            l_info = left.info,
-            r_info = right.info,
-            l_data = left.data,
-            r_data = right.data;
-
+        const {profile} = this._audioConfig,
+            {left, right, commonWindow, maskPresent} = element,
+            {leftInfo, leftData, leftTnsPresent} = left,
+            {rightInfo, rightData, rightTnsPresent} = right;
+        if (left.gainPresent || right.gainPresent)
+            throw new Error("Gain control not implemented");
         // Mid-side stereo
-        if (element.commonWindow && element.maskPresent)
-            this.processMS(element, l_data, r_data);
-
-        if (profile === AOT_AAC_MAIN)
-            throw new Error("Main prediction unimplemented");
-
+        commonWindow && maskPresent && this.processMS(element, leftData, rightData);
         // Intensity stereo
-        this.processIS(element, l_data, r_data);
-
-        if (profile === AOT_AAC_LTP)
-            throw new Error("LTP prediction unimplemented");
-
-        this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, l_data, r_data);
-
-        if (left.tnsPresent)
-            left.tns.process(left, l_data, false);
-
-        if (right.tnsPresent)
-            right.tns.process(right, r_data, false);
-
-        this.applyChannelCoupling(element, CCEElement.AFTER_TNS, l_data, r_data);
-
-        // filterbank
-        this.filter_bank.process(l_info, l_data, this.data[channel], channel);
-        this.filter_bank.process(r_info, r_data, this.data[channel + 1], channel + 1);
-
-        if (profile === AOT_AAC_LTP)
-            throw new Error("LTP prediction unimplemented");
-
-        this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], this.data[channel + 1]);
-
-        if (left.gainPresent)
-            throw new Error("Gain control not implemented");
-
-        if (right.gainPresent)
-            throw new Error("Gain control not implemented");
-
-        if (this.sbrPresent)
-            throw new Error("SBR not implemented");
+        this.processIntensityStereo(element, leftData, rightData);
+        this.applyChannelCoupling(element, BEFORE_TNS, leftData, rightData);
+        leftTnsPresent && left.tns.process(left, leftData, false);
+        rightTnsPresent && right.tns.process(right, rightData, false);
+        this.applyChannelCoupling(element, AFTER_TNS, leftData, rightData);
+        this._filterBank.process(leftInfo, leftData, this.data[channel], channel);
+        this._filterBank.process(rightInfo, rightData, this.data[channel + 1], channel + 1);
+        this.applyChannelCoupling(element, AFTER_IMDCT, this.data[channel], this.data[channel + 1]);
     };
-
 
     applyChannelCoupling(element, couplingPoint, data1, data2) {
         var cces = this.cces,
@@ -361,24 +312,9 @@ export default class AudioDecoder extends EventEmitter {
         }
     };
 
-    configure(audioConfigurations) {
-        this._configurations = {
-            adcd: audioConfigurations.adcd,
-            sampleRate: audioConfigurations.sampleRate,
-            channels: audioConfigurations.channels,
-            bitsPerChannel: audioConfigurations.sampleSize,
-            compressionId: audioConfigurations.compressionId,
-            timeScale: audioConfigurations.timeScale,
-            duration: audioConfigurations.duration,
-            packetSize: audioConfigurations.packetSize
-        };
-        this.filter_bank = new FilterBank(null, audioConfigurations.channels)
-    }
 
-    _readHeader(bitStream) { // ADTS header specs --> https://wiki.multimedia.cx/index.php/ADTS
-        if (bitStream.read(12) !== 0xfff) {
-            throw new Error('Invalid ADTS header.');
-        }
+    _readHeader(bitStream) {
+        debugger;
         const version = bitStream.read(1),              //MPEG Version: 0 for MPEG-4, 1 for MPEG-2
             layer = bitStream.read(2),                  //Layer: always 0
             isProtected = !bitStream.read(1);           //protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC
@@ -401,8 +337,8 @@ export default class AudioDecoder extends EventEmitter {
         }
     }
 
-    get configurations() {
-        return {...this._configurations};
+    get configuration() {
+        return this._audioConfig;
     }
 
     get samples() {
