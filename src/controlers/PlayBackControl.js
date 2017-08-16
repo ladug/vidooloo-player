@@ -99,11 +99,11 @@ export default class PlayBackControl extends EventEmitter {
             audioDecoder.decode(sample);
             window.setTimeout(() => {
                 this._decodeAudioSample();
-            }, 100);
+            }, 0);
         } else {
             window.setTimeout(() => {
                 this._decodeAudioSample();
-            }, 100);
+            }, 1);
         }
 
     };

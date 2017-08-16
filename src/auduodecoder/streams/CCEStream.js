@@ -161,4 +161,4 @@ CCEElement.prototype = {
     }
 };
 
-module.exports = CCEElement;
+export default CCEElement;

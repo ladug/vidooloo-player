@@ -75,6 +75,9 @@ export default class DigestControl extends EventEmitter {
     shiftAudioSample() {
         const {timeScale} = this.preload.audio,
             audioSample = this.dataParser.getAudioSample();
+        if (!audioSample) {
+            return null;
+        }
         this.preload.audio.currentTime += audioSample.duration;
         this._quePreloadCheck();
         return {
@@ -88,7 +91,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     _onSamplesUpdate = (event) => {
-       // console.log("_onSamplesUpdate", event);
+        // console.log("_onSamplesUpdate", event);
         const {videoSamplesDuration, audioSamplesDuration, isPartialSvf, isPartialPvf} = event;
         this.preload.video.loadedTime = videoSamplesDuration;
         this.preload.audio.loadedTime = audioSamplesDuration;

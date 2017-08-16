@@ -119,9 +119,8 @@ const decodeElement = (eType, bitStream, config) => {
             groupOff += info.groupLength[g] * 128;
         }
     },
-
     // Mid-side stereo
-    processMS = (element, left, right) => {
+    processMidSideStereo = (element, left, right) => {
         const ics = element.left,
             info = ics.info,
             offsets = info.swbOffsets,
@@ -158,10 +157,18 @@ const decodeElement = (eType, bitStream, config) => {
         }
 
     };
+let clock = Date.now();
+let lastPlay = Date.now();
+let audioContext = new AudioContext();
+let lastAudioTime = 0;
+let nextFrameTime = 0;
+let initialTime = 0;
+let nextNoteTime = 0;
+let oscStarted = false;
+let sampleIndex = 0;
 export default class AudioDecoder extends EventEmitter {
     _filterBank;
     _header = {};
-    _samples = [];
     _audioConfig = {
         chanConfig: 2,
         frameLength: 1024,
@@ -194,8 +201,7 @@ export default class AudioDecoder extends EventEmitter {
         while (sampleStream.hasData) {
             const eType = sampleStream.read(3);
             if (eType === END_ELEMENT) {
-                console.log("END_ELEMENT reached");
-                break;
+                break; //END_ELEMENT reached, end here
             }
             const element = decodeElement(eType, sampleStream, config);
             if ([ICS_STREAM, CPE_STREAM, CCE_STREAM].indexOf(element.type) > -1) {
@@ -206,10 +212,10 @@ export default class AudioDecoder extends EventEmitter {
             }
         }
         sampleStream.align();
-        this._process(elements)
+        const audioData = this._process(elements, couplingElements);
     }
 
-    _process(elements) {
+    _process(elements, couplingElements) {
         const {channels, frameLength} = this._audioConfig,
             data = new Array(channels).fill().map(() => new Float32Array(frameLength)),
             output = new Float32Array(frameLength * channels);
@@ -217,11 +223,11 @@ export default class AudioDecoder extends EventEmitter {
         elements.reduce((channel, {type, stream}) => {
             switch (type) {
                 case ICS_STREAM:
-                    this.processSingle(stream, channel);
+                    this.processSingle(stream, channel, data, couplingElements);
                     channel += 1;
                     break;
                 case CPE_STREAM:
-                    this.processPair(stream, channel);
+                    this.processPair(stream, channel, data, couplingElements);
                     channel += 2;
                     break;
                 case CCE_STREAM:
@@ -242,79 +248,103 @@ export default class AudioDecoder extends EventEmitter {
                 output[j++] = data[i][k] / 32768;
             }
         }
-
         return output;
     }
 
 
-    processSingle(element, channel) {
-        const {profile} = this._audioConfig,
-            {info, data, tnsPresent} = element;
+    processSingle(element, channel, data, couplingElements) {
+        const {info, data: elementData, tnsPresent, gainPresent} = element;
+        if (gainPresent) {
+            throw new Error("Gain control not implemented")
+        }
+        this.applyChannelCoupling(
+            element,
+            BEFORE_TNS,
+            [elementData],
+            couplingElements
+        );
+        tnsPresent && element.tns.process(element, elementData, false);
+        this.applyChannelCoupling(
+            element,
+            AFTER_TNS,
+            [elementData],
+            couplingElements
+        );
+        this._filterBank.process(info, elementData, data[channel], channel);
+        this.applyChannelCoupling(
+            element,
+            AFTER_IMDCT,
+            [data[channel]],
+            couplingElements
+        );
+    };
 
-        if (element.gainPresent) {
+    processPair(element, channel, data, couplingElements) {
+        const {left, right, commonWindow, maskPresent} = element,
+            {info: leftInfo, data: leftData, tnsPresent: leftTnsPresent} = left,
+            {info: rightInfo, data: rightData, tnsPresent: rightTnsPresent} = right;
+        if (left.gainPresent || right.gainPresent) {
             throw new Error("Gain control not implemented");
         }
 
-        this.applyChannelCoupling(element, BEFORE_TNS, data, null);
-        tnsPresent && element.tns.process(element, data, false);
-        this.applyChannelCoupling(element, AFTER_TNS, data, null);
-        this._filterBank.process(info, data, this.data[channel], channel);
-        this.applyChannelCoupling(element, AFTER_IMDCT, this.data[channel], null);
-        return 1;
-    };
 
-    processPair(element, channel) {
-        const {profile} = this._audioConfig,
-            {left, right, commonWindow, maskPresent} = element,
-            {leftInfo, leftData, leftTnsPresent} = left,
-            {rightInfo, rightData, rightTnsPresent} = right;
-        if (left.gainPresent || right.gainPresent)
-            throw new Error("Gain control not implemented");
-        // Mid-side stereo
-        commonWindow && maskPresent && this.processMS(element, leftData, rightData);
-        // Intensity stereo
-        this.processIntensityStereo(element, leftData, rightData);
-        this.applyChannelCoupling(element, BEFORE_TNS, leftData, rightData);
+        commonWindow && maskPresent && processMidSideStereo(element, leftData, rightData);  // Mid-side stereo
+        processIntensityStereo(element, leftData, rightData); // Intensity stereo
+        this.applyChannelCoupling(
+            element,
+            BEFORE_TNS,
+            [leftData, rightData],
+            couplingElements
+        );
         leftTnsPresent && left.tns.process(left, leftData, false);
         rightTnsPresent && right.tns.process(right, rightData, false);
-        this.applyChannelCoupling(element, AFTER_TNS, leftData, rightData);
-        this._filterBank.process(leftInfo, leftData, this.data[channel], channel);
-        this._filterBank.process(rightInfo, rightData, this.data[channel + 1], channel + 1);
-        this.applyChannelCoupling(element, AFTER_IMDCT, this.data[channel], this.data[channel + 1]);
+        this.applyChannelCoupling(
+            element,
+            AFTER_TNS,
+            [leftData, rightData],
+            couplingElements
+        );
+        this._filterBank.process(leftInfo, leftData, data[channel], channel);
+        this._filterBank.process(rightInfo, rightData, data[channel + 1], channel + 1);
+        this.applyChannelCoupling(
+            element,
+            AFTER_IMDCT,
+            [data[channel], data[channel + 1]],
+            couplingElements
+        );
     };
 
-    applyChannelCoupling(element, couplingPoint, data1, data2) {
-        var cces = this.cces,
-            isChannelPair = element instanceof CPEElement,
-            applyCoupling = couplingPoint === CCEElement.AFTER_IMDCT ? 'applyIndependentCoupling' : 'applyDependentCoupling';
 
-        for (var i = 0; i < cces.length; i++) {
-            var cce = cces[i],
-                index = 0;
+    applyChannelCoupling(element, couplingPoint, data, couplingElements) {
+        const data1 = data[0],
+            data2 = data[1],
+            isChannelPair = data.length > 1,
+            applyCoupling = couplingPoint === AFTER_IMDCT ? 'applyIndependentCoupling' : 'applyDependentCoupling';
 
-            if (cce.couplingPoint === couplingPoint) {
-                for (var c = 0; c < cce.coupledCount; c++) {
-                    var chSelect = cce.chSelect[c];
+        couplingElements.filter(
+            ({ChannelCouplingPoint}) => ChannelCouplingPoint === couplingPoint
+        ).forEach(
+            (cce) => {
+                let index = 0;
+                for (let c = 0; c < cce.coupledCount; c++) {
+                    const chSelect = cce.chSelect[c];
                     if (cce.channelPair[c] === isChannelPair && cce.idSelect[c] === element.id) {
                         if (chSelect !== 1) {
                             cce[applyCoupling](index, data1);
                             if (chSelect) index++;
                         }
-
-                        if (chSelect !== 2)
+                        if (chSelect !== 2) {
                             cce[applyCoupling](index++, data2);
-
+                        }
                     } else {
                         index += 1 + (chSelect === 3 ? 1 : 0);
                     }
                 }
-            }
-        }
+            });
     };
 
 
     _readHeader(bitStream) {
-        debugger;
         const version = bitStream.read(1),              //MPEG Version: 0 for MPEG-4, 1 for MPEG-2
             layer = bitStream.read(2),                  //Layer: always 0
             isProtected = !bitStream.read(1);           //protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC

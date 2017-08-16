@@ -8,9 +8,6 @@ import {HeadersReadyEvent, ExtractedSamplesEvent} from "./DataParserEvents";
 import BufferByteStream from "../ByteStream/BufferByteStream";
 
 const SAMPLE_TYPE_FLAG = 0,
-    SAMPLE_KEY_FLAG = 1,
-    SAMPLE_EXTRA_FLAG = 2,
-    SAMPLE_EXTRA_TWO_FLAG = 3,
     SAMPLE_TYPE_VIDEO = 1;
 
 const getSvfChunkSize = (size, skipFactor) => (size - (size % skipFactor)) / skipFactor,
