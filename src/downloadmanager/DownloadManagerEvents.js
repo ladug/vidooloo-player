@@ -11,10 +11,6 @@ export class ChunkDownloadedEvent extends Event {
         this._chunk = chunk || null;
     }
 
-    // get chunkData() {
-    //     return this._chunk.chunkData;
-    // }
-
     get chunk() {
         return this._chunk;
     }

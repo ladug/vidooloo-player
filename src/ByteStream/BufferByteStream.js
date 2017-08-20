@@ -153,7 +153,7 @@ export default class BufferByteStream {
     addChunk(uint8Chunk) {
         const {chunks, chunksData, size} = this,
             chunkSize = uint8Chunk.length;
-        // assert(chunkSize >= 4, "Minimum chunk is 4 bytes!");
+        assert(chunkSize >= 4, "Minimum chunk is 4 bytes!");
         chunksData.push({
             start: size,
             end: size + chunkSize,
