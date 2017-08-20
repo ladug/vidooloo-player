@@ -16,7 +16,7 @@ import {assert, sec} from "./common";
 import Decoder from "./Decoder/Decoder";
 import AudioDecoder from "./auduodecoder/AudioDecoder";
 const DEBUG_SVF_SRC = "http://vido.com/720p-sample.svf.digest";
-const DEBUG_SVF_SRC_FILE = "720p-sample";
+const DEBUG_SVF_SRC_FILE = "720p-sample"; //TODO:Itai - User PVF ID not file name.
 //const DEBUG_SVF_SRC = "http://vidooloo.com/wp-content/test-files/mozilla_story.svf.digest";
 const DECODE_WORKER_SRC = "decoder.bundle.js";
 
@@ -118,7 +118,7 @@ export default class VidoolooPlayer {
             version: event.payload.version,
             pvfUid: event.payload.uid,
             src: DEBUG_SVF_SRC,
-            file: DEBUG_SVF_SRC_FILE,
+            file: DEBUG_SVF_SRC_FILE, //TODO:Itai - User PVF ID not file name.
         });
         this.digester = new DigestControl(
             this.downloadManager,
