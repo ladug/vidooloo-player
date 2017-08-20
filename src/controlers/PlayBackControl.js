@@ -8,6 +8,37 @@ import {} from "../canvasplayer/CanvasEvents";
 import {sec, assert} from '../common';
 let sampleCount = 0;
 let timer = 0;
+
+const audioContext = new AudioContext(),
+    audioNode = audioContext.createScriptProcessor(1024, 2, 2),
+    source = audioContext.createBufferSource();
+
+audioNode.connect(audioContext.destination);
+
+
+const dataStore = [];
+//https://github.com/taisel/XAudioJS resampler
+audioNode.onaudioprocess = function (event) {
+    var channelCount, channels, data, i, j, k, l, n, outputBuffer, ref, ref1, ref2;
+    outputBuffer = event.outputBuffer;
+    channelCount = outputBuffer.numberOfChannels;
+    channels = new Array(channelCount);
+
+    for (i = j = 0, ref = channelCount; j < ref; i = j += 1) {
+        channels[i] = outputBuffer.getChannelData(i);
+    } 
+
+    data = dataStore.shift();
+    if (!data) {
+        return;
+    }
+    for (i = k = 0, ref1 = outputBuffer.length; k < ref1; i = k += 1) {
+        for (n = l = 0, ref2 = channelCount; l < ref2; n = l += 1) {
+            channels[n][i] = data[i * channelCount + n];
+        }
+    }
+};
+
 export default class PlayBackControl extends EventEmitter {
     digester = null;
     canvasPlayer = null;
@@ -96,10 +127,17 @@ export default class PlayBackControl extends EventEmitter {
         const sample = digester.shiftAudioSample();
 
         if (sample) {
-            audioDecoder.decode(sample);
+
+            dataStore.push(audioDecoder.decode(sample));
+            /*audioContext.decodeAudioData(audioData.buffer,function(buffer){
+             console.log("SUCCESS!");
+             },function(buffer){
+             console.log("EPIC FAIL!");
+             });*/
+
             window.setTimeout(() => {
                 this._decodeAudioSample();
-            }, 0);
+            }, 1);
         } else {
             window.setTimeout(() => {
                 this._decodeAudioSample();

@@ -212,7 +212,7 @@ export default class AudioDecoder extends EventEmitter {
             }
         }
         sampleStream.align();
-        const audioData = this._process(elements, couplingElements);
+        return this._process(elements, couplingElements);
     }
 
     _process(elements, couplingElements) {
@@ -241,7 +241,6 @@ export default class AudioDecoder extends EventEmitter {
             }
             return channel;
         }, 0);
-
         let j = 0;
         for (let k = 0; k < frameLength; k++) {
             for (let i = 0; i < channels; i++) {
