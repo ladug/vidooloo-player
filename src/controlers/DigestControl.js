@@ -75,6 +75,9 @@ export default class DigestControl extends EventEmitter {
     shiftAudioSample() {
         const {timeScale} = this.preload.audio,
             audioSample = this.dataParser.getAudioSample();
+        if (!audioSample) {
+            return null;
+        }
         this.preload.audio.currentTime += audioSample.duration;
         this._quePreloadCheck();
         return {
@@ -88,7 +91,7 @@ export default class DigestControl extends EventEmitter {
     }
 
     _onSamplesUpdate = (event) => {
-       // console.log("_onSamplesUpdate", event);
+        // console.log("_onSamplesUpdate", event);
         const {videoSamplesDuration, audioSamplesDuration, isPartialSvf, isPartialPvf} = event;
         this.preload.video.loadedTime = videoSamplesDuration;
         this.preload.audio.loadedTime = audioSamplesDuration;
@@ -158,13 +161,13 @@ export default class DigestControl extends EventEmitter {
     }
 
     _onPvfChunk = (event) => {
-        console.log("_onPvfChunk", event);
+        //console.log("_onPvfChunk", event);
         this._isPvfLoading = false;
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));
     };
 
     _onSvfChunk = (event) => {
-        console.log("_onSvfChunk", event);
+        //console.log("_onSvfChunk", event);
         this._isSvfLoading = false;
         this.dataParser.addSvfChunk(new Uint8Array(event.chunk));
     };

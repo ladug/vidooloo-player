@@ -20,8 +20,18 @@ export default class ByteStream {
         return this.offset < this.length;
     }
 
+    reset() {
+        this.offset = 0;
+    }
+
+    skip(readSize) {
+        this.offset += readSize;
+        return true;
+    }
+
     updateOffset(readSize) {
         this.offset += readSize;
+        return true;
     }
 
     read4() {

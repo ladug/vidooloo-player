@@ -138,7 +138,7 @@ export default class Decoder extends EventEmitter {
     };
 
     _onWorkerMessage = ({data}) => {
-        console.error("_onWorkerMessage", data);
+        //console.error("_onWorkerMessage", data);
 
         if (data.consoleLog) {
             if (data.consoleLog === "broadway worker initialized") {
