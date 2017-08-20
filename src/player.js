@@ -14,7 +14,7 @@ import {CanvasReady} from "./canvasplayer/CanvasEvents";
 import {DecoderReadyEvent} from "./Decoder/DecoderEvents";
 import {assert, sec} from "./common";
 import Decoder from "./Decoder/Decoder";
-
+import AudioDecoder from "./auduodecoder/AudioDecoder";
 const DEBUG_SVF_SRC = "http://vido.com/720p-sample.svf.digest";
 const DEBUG_SVF_SRC_FILE = "720p-sample";
 //const DEBUG_SVF_SRC = "http://vidooloo.com/wp-content/test-files/mozilla_story.svf.digest";
@@ -34,11 +34,13 @@ export default class VidoolooPlayer {
     svfStream = null;
     digester = null;
     decoder = null;
+    audioDecoder = null;
     playback = null;
     _readyState = {
         canvasPlayer: false,
         digester: false,
-        decoder: false
+        decoder: false,
+        audioDecoder: false
     };
 
     constructor(sourceTag) {
@@ -55,8 +57,8 @@ export default class VidoolooPlayer {
     }
 
     onPlayerReady() {
-        const {canvasPlayer, digester, decoder, controls} = this;
-        this.playback = new PlayBackControl(canvasPlayer, digester, decoder, controls);
+        const {canvasPlayer, digester, decoder, audioDecoder, controls} = this;
+        this.playback = new PlayBackControl(canvasPlayer, digester, decoder, audioDecoder, controls);
         this.playback.init();
     }
 
@@ -91,8 +93,8 @@ export default class VidoolooPlayer {
 
     updateReadyState(item, value) {
         this._readyState[item] = value;
-        const {canvasPlayer, digester, decoder} = this._readyState;
-        if (canvasPlayer && digester && decoder) {
+        const {canvasPlayer, digester, decoder, audioDecoder} = this._readyState;
+        if (canvasPlayer && digester && decoder && audioDecoder) {
             this.onPlayerReady();
         }
     }
@@ -105,6 +107,8 @@ export default class VidoolooPlayer {
     _onDigestControlReady = (event) => {
         console.log("_onDigestControlReady", event);
         this.updateReadyState("digester", true);
+        this.audioDecoder = new AudioDecoder();
+        this.updateReadyState("audioDecoder", true);
     };
 
     _onDownloadManagerReady = (event) => {
@@ -123,6 +127,7 @@ export default class VidoolooPlayer {
                 preloadTime: 5 * sec
             }
         );
+
         this.digester.addEventListener(DigestControlReady, this._onDigestControlReady);
         this.digester.init();
     };
