@@ -28,6 +28,8 @@ export default class SvfStreamManager extends EventEmitter {
     }
 
     init() {
+        //TODO:Itai - socket connection only establishes when onopen event is fired! NOT IMMEDIATLY!
+        //TODO:Itai please refer to this https://www.tutorialspoint.com/html5/html5_websocket.htm and https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
         this.readStream = new WebSocket(SVF_URL);
         this.readStream.onmessage = this._onMessage;
         this.readStream.onerror = this._onChunkError;
