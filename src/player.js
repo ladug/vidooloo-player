@@ -120,6 +120,7 @@ export default class VidoolooPlayer {
             src: DEBUG_SVF_SRC,
             file: DEBUG_SVF_SRC_FILE, //TODO:Itai - User PVF ID not file name.
         });
+        this.svfStream.init();
         this.digester = new DigestControl(
             this.downloadManager,
             this.svfStream,
