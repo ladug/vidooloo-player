@@ -118,10 +118,7 @@ export default class VidoolooPlayer {
             version: event.payload.version,
             pvfUid: event.payload.uid,
             src: DEBUG_SVF_SRC,
-            file: DEBUG_SVF_SRC_FILE, //TODO:Itai - User PVF ID not file name.
         });
-        this.svfStream.init();
-        //TODO: Itai, you init this and dont wait for success/error... digester should only exist once everything is ready
         this.digester = new DigestControl(
             this.downloadManager,
             this.svfStream,

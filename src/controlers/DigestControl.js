@@ -4,7 +4,7 @@
 import EventEmitter from "../events/EventEmitter";
 import DataParser from "../dataparser/DataParser";
 import {sec} from "../common";
-import {ChunkDownloadedEvent} from "../downloadmanager/DownloadManagerEvents";
+import {ChunkDownloadedEvent, ConnectionOpenedEvent} from "../downloadmanager/DownloadManagerEvents";
 import {HeadersReadyEvent, ExtractedSamplesEvent} from "../dataparser/DataParserEvents";
 import {DigestControlReady} from "./DigestControlEvents";
 
@@ -26,17 +26,17 @@ export default class DigestControl extends EventEmitter {
             preloadDuration: 0,
             loadedTime: 1,
             currentTime: 0,
-        }
+        },
     };
     _basicInfo = {};
     _isPvfLoading = false;
     _isSvfLoading = false;
     headers = {
         pvf: null,
-        svf: null
+        svf: null,
     };
     configurations = {
-        preload: 5
+        preload: 5,
     };
 
     constructor(pvfDownloadManager, svfDownloadManager, configurations = {}) {
@@ -63,7 +63,7 @@ export default class DigestControl extends EventEmitter {
         this._quePreloadCheck();
         return {
             ...videoSample,
-            duration: videoSample.duration / timeScale * sec
+            duration: videoSample.duration / timeScale * sec,
         };
     }
 
@@ -82,7 +82,7 @@ export default class DigestControl extends EventEmitter {
         this._quePreloadCheck();
         return {
             ...audioSample,
-            duration: audioSample.duration / timeScale * sec
+            duration: audioSample.duration / timeScale * sec,
         };
     }
 
@@ -103,7 +103,7 @@ export default class DigestControl extends EventEmitter {
     _checkRunPreloaded = () => {
         const {
                 video: {loadedTime: videoSamplesDuration, preloadDuration: videoPreloadDuration, currentTime: videoCurrentTime},
-                audio: {loadedTime: audioSamplesDuration, preloadDuration: audioPreloadDuration, currentTime: audioCurrentTime}
+                audio: {loadedTime: audioSamplesDuration, preloadDuration: audioPreloadDuration, currentTime: audioCurrentTime},
             } = this.preload,
             isVideoPreloaded = (videoSamplesDuration - videoCurrentTime) >= videoPreloadDuration,
             isAudioPreloaded = (audioSamplesDuration - audioCurrentTime) >= audioPreloadDuration;
@@ -132,7 +132,7 @@ export default class DigestControl extends EventEmitter {
             {preload} = this.configurations;
         this.headers = {
             pvf: event.pvfHeader,
-            svf: event.svfHeader
+            svf: event.svfHeader,
         };
         this.preload.video = {
             preloadDuration: preload * videoTimeScale,
@@ -151,7 +151,7 @@ export default class DigestControl extends EventEmitter {
             videoTimeScale,
             audioTimeScale,
             videoWidth,
-            videoHeight
+            videoHeight,
         };
         this.dispatchEvent(new DigestControlReady(this._basicInfo));
     };
@@ -166,6 +166,10 @@ export default class DigestControl extends EventEmitter {
         this.dataParser.addPvfChunk(new Uint8Array(event.chunk));
     };
 
+    _onSvfConnectionOpened = () => {
+        const {svfDownloadManager} = this;
+        svfDownloadManager.readChunk();
+    }
     _onSvfChunk = (event) => {
         //console.log("_onSvfChunk", event);
         this._isSvfLoading = false;
@@ -175,6 +179,7 @@ export default class DigestControl extends EventEmitter {
     init() {
         const {pvfDownloadManager, svfDownloadManager} = this;
         pvfDownloadManager.readChunks();
-        svfDownloadManager.readChunk();
+        svfDownloadManager.addEventListener(ConnectionOpenedEvent, this._onSvfConnectionOpened);
+        svfDownloadManager.init();
     }
 }

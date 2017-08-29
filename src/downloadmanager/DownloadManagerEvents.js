@@ -16,6 +16,10 @@ export class ChunkDownloadedEvent extends Event {
     }
 }
 
+export class ConnectionOpenedEvent extends Event {
+
+}
+
 export class ManagerReadyEvent extends Event {
     _payload = null;
 

@@ -2,12 +2,12 @@
  * Created by vladi on 27-May-17.
  */
 import EventEmitter from "../events/EventEmitter";
-import {ChunkDownloadedEvent} from "./DownloadManagerEvents";
+import {ChunkDownloadedEvent, ConnectionOpenedEvent} from "./DownloadManagerEvents";
 import {StreamError, StreamSuccess, StreamAbort} from "../stream/StreamEvents";
 import {assert, kb} from "../common";
+import {encode as QsEncode} from "querystring";
 
-const SVF_URL = "ws://localhost:3101/"; //TODO:Itai - This should be passed to the constructor instead...
-//TODO:Itai I use new x(); x.addEventListener(y);  x.init()  to avoid this nonsence
+const SVF_URL = "ws://localhost:3101/";
 export default class SvfStreamManager extends EventEmitter {
     configurations = {
         pvfUid: null,
@@ -28,15 +28,23 @@ export default class SvfStreamManager extends EventEmitter {
     }
 
     init() {
-        //TODO:Itai - socket connection only establishes when onopen event is fired! NOT IMMEDIATLY!
-        //TODO:Itai please refer to this https://www.tutorialspoint.com/html5/html5_websocket.htm and https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
-        this.readStream = new WebSocket(SVF_URL);
+        const {configurations} = this,
+            {pvfUid} = configurations;
+
+        const fileId = Buffer.from(pvfUid).toString('hex')
+        const params = QsEncode({fileId});
+
+        this.readStream = new WebSocket(`${SVF_URL}?${params}`);
+        this.readStream.onopen = this._onOpen;
         this.readStream.onmessage = this._onMessage;
         this.readStream.onerror = this._onChunkError;
     }
 
+    _onOpen = () => {
+        this.dispatchEvent(new ConnectionOpenedEvent());
+    }
+
     _onMessage = (event) => {
-        //TODO:Itai Why file reader!? see this link https://stackoverflow.com/questions/24998779/pass-binary-data-with-websocket
         const fileReader = new FileReader();
         fileReader.addEventListener("load", () => this.dispatchEvent(new ChunkDownloadedEvent(fileReader.result)));
         fileReader.readAsArrayBuffer(event.data);
@@ -48,18 +56,12 @@ export default class SvfStreamManager extends EventEmitter {
 
     readChunk() {
         const {readStream, configurations} = this,
-            {file, readSize} = configurations;
+            {readSize} = configurations;
 
         const data = JSON.stringify({
-            file: file, //TODO:Itai shouldnt the server already remeber the position and file, if not then please make it so
             portion: readSize,
         });
 
-        //TODO:Itai -  should not be here, if its open then its initiated and only then should be available for chunk reading...
-        if (readStream.readyState === WebSocket.OPEN) {
-            readStream.send(data);
-        } else {
-            readStream.addEventListener("open", () => readStream.send(data));
-        }
+        readStream.send(data);
     }
 }
