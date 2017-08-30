@@ -55,13 +55,8 @@ export default class SvfStreamManager extends EventEmitter {
     };
 
     readChunk() {
-        const {readStream, configurations} = this,
-            {readSize} = configurations;
+        const {readStream} = this;
 
-        const data = JSON.stringify({
-            portion: readSize,
-        });
-
-        readStream.send(data);
+        readStream.send('');
     }
 }
